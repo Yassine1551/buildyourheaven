@@ -60,7 +60,7 @@ export default function MihrabScreen() {
 
   const handleShare = useCallback(() => {
     const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
-    const msg = `من قال :\n${item.dhikrText}\n${formatCountWithMarra(item.targetCount)}\n${item.fadl}\n\n📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
+    const msg = `من قال ${formatCountWithMarra(item.targetCount)} :\n${item.dhikrText}\n${item.fadl}\n\n📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
     Share.share({ message: msg });
   }, [item, useWesternNumerals]);
 
