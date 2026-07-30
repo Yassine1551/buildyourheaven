@@ -836,13 +836,6 @@ export default function DashboardScreen() {
                             <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
                               <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                             </View>
-                            <Pressable
-                              onPress={() => handleShareDhikr(item)}
-                              style={({ pressed }) => [styles.shareBadge, pressed && { opacity: 0.5 }]}
-                              hitSlop={6}
-                            >
-                              <MaterialIcons name="share" size={14} color="rgba(255,255,255,0.35)" />
-                            </Pressable>
                             <Text style={styles.dhikrCardTitle} numberOfLines={2}>
                               {item.title}
                             </Text>
@@ -2784,18 +2777,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 26,
-  },
-  shareBadge: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    zIndex: 10,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   shareCardCapture: {
     position: 'absolute',
