@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     width: '100%',
-    paddingTop: 6,
+    paddingTop: 4,
   },
   dhikrCountSlot: {
     height: 30,
@@ -1832,7 +1832,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
   dhikrCardTitle: {
     fontSize: 15,
