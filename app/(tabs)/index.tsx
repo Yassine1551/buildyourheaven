@@ -275,7 +275,7 @@ export default function DashboardScreen() {
     await new Promise(resolve => setTimeout(resolve, 300));
     try {
       const uri = await captureRef(benefitShareCardRef, { format: 'png', quality: 1 });
-      const msg = `📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
+      const msg = `📌 حمّل تطبيق ابنِ جنتك - لتغنم كنوز الأذكار 👇\n${appLink}`;
       if (Platform.OS === 'ios') {
         await Share.share({ message: msg, url: uri });
       } else {
@@ -288,7 +288,7 @@ export default function DashboardScreen() {
       }
     } catch (e) {
       console.warn('Share benefit failed:', e);
-      const msg = `✨ فائدة اليوم ✨\n\n${dailyBenefit}\n\n📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
+      const msg = `✨ فائدة اليوم ✨\n\n${dailyBenefit}\n\n📌 حمّل تطبيق ابنِ جنتك - لتغنم كنوز الأذكار 👇\n${appLink}`;
       await Share.share({ message: msg });
     }
     setSharingBenefit(false);
