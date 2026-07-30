@@ -149,8 +149,6 @@ export default function DashboardScreen() {
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdStartRef = useRef<number>(0);
   const devTapCountRef = useRef(0);
-  const [sharingDhikr, setSharingDhikr] = useState<DhikrItem | null>(null);
-  const shareCardRef = useRef<any>(null);
   const [sharingBenefit, setSharingBenefit] = useState<boolean>(false);
   const benefitShareCardRef = useRef<any>(null);
 
@@ -270,29 +268,6 @@ export default function DashboardScreen() {
     }
     router.push({ pathname: '/mihrab', params: { id: dhikrId } });
   }, [isCardUnlocked, getUnlockRequirement, router, showAlert]);
-
-  const handleShareDhikr = useCallback(async (item: DhikrItem) => {
-    const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
-    setSharingDhikr(item);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    try {
-      const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
-      const msg = `📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
-      if (Platform.OS === 'ios') {
-        await Share.share({ message: msg, url: uri });
-      } else {
-        const contentUri = await FileSystem.getContentUriAsync(uri);
-        const result = await Share.share({ url: contentUri });
-        if (result.action === Share.sharedAction) {
-          await new Promise(r => setTimeout(r, 500));
-          await Share.share({ message: msg });
-        }
-      }
-    } catch (e) {
-      console.warn('Share failed', e);
-    }
-    setSharingDhikr(null);
-  }, []);
 
   const handleShareBenefit = useCallback(async () => {
     const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
@@ -1465,38 +1440,6 @@ export default function DashboardScreen() {
         </Pressable>
       </Modal>
 
-      {sharingDhikr && (
-        <View ref={shareCardRef} collapsable={false} style={styles.shareCardCapture}>
-          <LinearGradient
-            colors={['#0D2B1D', '#1A4A2E', '#0D2B1D']}
-            locations={[0, 0.5, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.shareCardInner}>
-            <View style={styles.shareOrnament}>
-              <Image source={require('../../assets/images/logo.png')} style={styles.shareLogo} />
-              <View style={styles.shareDividerLine} />
-            </View>
-            <View style={styles.shareDhikrWrap}>
-              <Text style={styles.shareDhikrText}>{sharingDhikr.dhikrText}</Text>
-            </View>
-            <View style={styles.shareFadlWrap}>
-              <Text style={styles.shareFadlLabel}>فضل الذكر</Text>
-              <View style={styles.shareFadlDivider} />
-              <Text style={styles.shareFadlText}>{sharingDhikr.fadl}</Text>
-            </View>
-            <View style={styles.shareCountWrap}>
-              <Text style={styles.shareCountLabel}>العدد المطلوب</Text>
-              <Text style={styles.shareCountValue}>{sharingDhikr.targetCount}</Text>
-            </View>
-            <View style={styles.shareBottomOrnament}>
-              <View style={styles.shareDividerLine} />
-              <MaterialIcons name="spa" size={16} color="rgba(212,175,55,0.3)" />
-              <Text style={styles.shareAppName}>تطبيق ابنِ جنتك</Text>
-            </View>
-          </View>
-        </View>
-      )}
       {sharingBenefit && (() => {
         const idx = dailyBenefit.lastIndexOf(' - ');
         const quote = idx !== -1 ? dailyBenefit.slice(0, idx) : dailyBenefit;
@@ -2777,106 +2720,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 26,
-  },
-  shareCardCapture: {
-    position: 'absolute',
-    left: -9999,
-    top: 0,
-    width: 500,
-    height: 700,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  shareCardInner: {
-    flex: 1,
-    paddingHorizontal: 32,
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  shareOrnament: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  shareLogo: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-  shareDividerLine: {
-    width: 180,
-    height: 1,
-    backgroundColor: 'rgba(212,175,55,0.3)',
-  },
-  shareDhikrWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  shareDhikrText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFF',
-    textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 42,
-  },
-  shareFadlWrap: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(212,175,55,0.08)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    width: '100%',
-  },
-  shareFadlLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#D4AF37',
-    marginBottom: 6,
-    writingDirection: 'rtl',
-  },
-  shareFadlDivider: {
-    width: 40,
-    height: 1,
-    backgroundColor: 'rgba(212,175,55,0.25)',
-    marginBottom: 8,
-  },
-  shareFadlText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 24,
-  },
-  shareCountWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 8,
-  },
-  shareCountLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
-    writingDirection: 'rtl',
-  },
-  shareCountValue: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#D4AF37',
-  },
-  shareBottomOrnament: {
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  shareAppName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.4)',
-    writingDirection: 'rtl',
   },
   benefitShareCardInner: {
     flex: 1,
