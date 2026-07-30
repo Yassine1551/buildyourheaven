@@ -995,7 +995,7 @@ export default function DashboardScreen() {
               </>
             ) : (
               <>
-                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 16 }}>
                   <TextInput
                     style={[styles.welcomeInput, { flex: 1, marginBottom: 0 }]}
                     placeholder="اكتب اسمك هنا..."
@@ -1024,14 +1024,20 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.welcomeGenderRow}>
                   <Pressable
-                    onPress={() => setWelcomeGender('male')}
+                    onPress={() => {
+                      setWelcomeGender('male');
+                      setCustomNameInput(MALE_NAMES[Math.floor(Math.random() * MALE_NAMES.length)]);
+                    }}
                     style={({ pressed }) => [styles.welcomeGenderBtnSmall, welcomeGender === 'male' && styles.welcomeGenderBtnActive, pressed && { opacity: 0.8 }]}
                   >
                     <MaterialIcons name="man" size={18} color={welcomeGender === 'male' ? '#FFF' : '#064E3B'} />
                     <Text style={[styles.welcomeGenderTextSmall, welcomeGender === 'male' && styles.welcomeGenderTextActive]}>ذكر</Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => setWelcomeGender('female')}
+                    onPress={() => {
+                      setWelcomeGender('female');
+                      setCustomNameInput(FEMALE_NAMES[Math.floor(Math.random() * FEMALE_NAMES.length)]);
+                    }}
                     style={({ pressed }) => [styles.welcomeGenderBtnSmall, welcomeGender === 'female' && styles.welcomeGenderBtnActive, pressed && { opacity: 0.8 }]}
                   >
                     <MaterialIcons name="woman" size={18} color={welcomeGender === 'female' ? '#FFF' : '#064E3B'} />
