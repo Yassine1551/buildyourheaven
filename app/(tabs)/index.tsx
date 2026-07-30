@@ -1770,8 +1770,9 @@ const styles = StyleSheet.create({
   dhikrCardInner: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     width: '100%',
+    paddingTop: 2,
   },
   dhikrCardInnerLocked: {
     flex: 1,
