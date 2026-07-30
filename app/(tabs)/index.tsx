@@ -461,7 +461,7 @@ export default function DashboardScreen() {
   };
 
   const statCardWidth = (SCREEN_WIDTH - 32 - 36) / 4;
-  const dhikrCardWidth = (SCREEN_WIDTH - 32 - 24) / 3;
+  const dhikrCardWidth = (SCREEN_WIDTH - 24 - 16) / 3;
 
   const sortedDhikr = [...dhikrItems].sort((a, b) => a.order - b.order);
   const titleFontSizes: Record<string, number> = {
@@ -1790,7 +1790,7 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 2,
   },
   dhikrIconCircleLocked: {
     width: 56,
@@ -1809,13 +1809,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   dhikrCard: {
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
     backgroundColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
     overflow: 'hidden',
   },
   dhikrCardActive: {
