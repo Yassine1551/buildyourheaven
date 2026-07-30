@@ -50,11 +50,19 @@ export default function MihrabScreen() {
 
   const buttonScale = useSharedValue(1);
 
+  const formatCountWithMarra = (count: number): string => {
+    const num = formatArabicNumber(count, useWesternNumerals);
+    if (count === 1) return 'مرة واحدة';
+    if (count === 2) return 'مرتين';
+    if (count >= 3 && count <= 10) return `${num} مرات`;
+    return `${num} مرة`;
+  };
+
   const handleShare = useCallback(() => {
     const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
-    const msg = `من قال :\n${item.dhikrText}\n${item.targetCount}\n${item.fadl}\n\n📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
+    const msg = `من قال :\n${item.dhikrText}\n${formatCountWithMarra(item.targetCount)}\n${item.fadl}\n\n📌 حمّل تطبيق ابنِ جنتك - صدقة جارية لك 👇\n${appLink}`;
     Share.share({ message: msg });
-  }, [item]);
+  }, [item, useWesternNumerals]);
 
   const [showDaleel, setShowDaleel] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
