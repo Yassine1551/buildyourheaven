@@ -1011,15 +1011,15 @@ export default function DashboardScreen() {
                       setCustomNameInput(pool[Math.floor(Math.random() * pool.length)]);
                     }}
                     style={({ pressed }) => [{
-                      paddingHorizontal: 10,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      borderWidth: 1,
-                      borderColor: 'rgba(212,175,55,0.4)',
-                    }, pressed && { opacity: 0.7 }]}
+                      width: 50,
+                      height: 50,
+                      borderRadius: 10,
+                      backgroundColor: '#064E3B',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.gold }}>تغيير</Text>
+                    <MaterialIcons name="swap-horiz" size={24} color="#FFF" />
                   </Pressable>
                 </View>
                 <View style={styles.welcomeGenderRow}>
