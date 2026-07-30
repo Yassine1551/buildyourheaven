@@ -1828,12 +1828,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dhikrCardTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     color: '#1a1a1a',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 19,
+    lineHeight: 21,
   },
   dhikrCountText: {
     fontSize: 16,
