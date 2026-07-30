@@ -817,7 +817,7 @@ export default function DashboardScreen() {
                           <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
                             <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={1}>
+                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlot}>
@@ -831,7 +831,7 @@ export default function DashboardScreen() {
                           <View style={styles.dhikrIconCircleLocked}>
                             <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={1}>
+                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlotLocked}>
