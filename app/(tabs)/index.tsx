@@ -830,38 +830,46 @@ export default function DashboardScreen() {
                         !unlocked && pressed && { opacity: 0.5 },
                       ]}
                     >
-                      {unlocked ? (
-                        <>
-                          <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
-                            <MaterialIcons name={item.icon as any} size={32} color={item.color} />
-                          </View>
-                          <Pressable
-                            onPress={() => handleShareDhikr(item)}
-                            style={({ pressed }) => [styles.shareBadge, pressed && { opacity: 0.5 }]}
-                            hitSlop={6}
-                          >
-                            <MaterialIcons name="share" size={14} color="rgba(255,255,255,0.35)" />
-                          </Pressable>
-                          <Text style={styles.dhikrCardTitle} numberOfLines={2}>
-                            {item.title}
-                          </Text>
-                          {count > 0 ? (
-                            <Text style={[styles.dhikrCountText, { color: item.color }]}>
-                              {formatArabicNumber(count, useWesternNumerals)}
+                      <View style={styles.dhikrCardInner}>
+                        {unlocked ? (
+                          <>
+                            <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
+                              <MaterialIcons name={item.icon as any} size={32} color={item.color} />
+                            </View>
+                            <Pressable
+                              onPress={() => handleShareDhikr(item)}
+                              style={({ pressed }) => [styles.shareBadge, pressed && { opacity: 0.5 }]}
+                              hitSlop={6}
+                            >
+                              <MaterialIcons name="share" size={14} color="rgba(255,255,255,0.35)" />
+                            </Pressable>
+                            <Text style={styles.dhikrCardTitle} numberOfLines={2}>
+                              {item.title}
                             </Text>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>
-                          <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
-                          <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
-                            {item.title}
-                          </Text>
-                          <Text style={styles.dhikrReqText} numberOfLines={2}>
-                            {item.unlockRequirement || ''}
-                          </Text>
-                        </>
-                      )}
+                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                              {count > 0 ? (
+                                <Text style={[styles.dhikrCountText, { color: item.color }]}>
+                                  {formatArabicNumber(count, useWesternNumerals)}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <View style={styles.dhikrIconCircleLocked}>
+                              <MaterialIcons name="lock-outline" size={28} color="rgba(0,0,0,0.25)" />
+                            </View>
+                            <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                              <Text style={styles.dhikrReqText} numberOfLines={2}>
+                                {item.unlockRequirement || ''}
+                              </Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
                     </Pressable>
                   </Animated.View>
                 );
@@ -1813,6 +1821,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: 'rgba(255,255,255,0.45)',
     textAlign: 'left',
+  },
+  dhikrCardInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  dhikrIconCircleLocked: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   dhikrGrid: {
     flexDirection: 'row',
