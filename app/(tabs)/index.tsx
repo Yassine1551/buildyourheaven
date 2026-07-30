@@ -814,12 +814,10 @@ export default function DashboardScreen() {
                             <Text style={styles.dhikrCardTitle} numberOfLines={2}>
                               {item.title}
                             </Text>
-                            <View style={{ flex: 1, justifyContent: 'center' }}>
-                              {count > 0 ? (
-                                <Text style={[styles.dhikrCountText, { color: item.color }]}>
-                                  {formatArabicNumber(count, useWesternNumerals)}
-                                </Text>
-                              ) : null}
+                            <View style={styles.dhikrCountSlot}>
+                              <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
+                                {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
+                              </Text>
                             </View>
                           </>
                         ) : (
@@ -830,7 +828,7 @@ export default function DashboardScreen() {
                             <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
                               {item.title}
                             </Text>
-                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                            <View style={styles.dhikrCountSlot}>
                               <Text style={styles.dhikrReqText} numberOfLines={2}>
                                 {item.unlockRequirement || ''}
                               </Text>
@@ -1763,6 +1761,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+  },
+  dhikrCountSlot: {
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dhikrIconCircleLocked: {
     width: 56,
@@ -2720,6 +2723,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 26,
+  },
+  shareCardCapture: {
+    position: 'absolute',
+    left: -9999,
+    top: 0,
+    width: 500,
+    height: 700,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  shareOrnament: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  shareLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  shareDividerLine: {
+    width: 180,
+    height: 1,
+    backgroundColor: 'rgba(212,175,55,0.3)',
   },
   benefitShareCardInner: {
     flex: 1,
