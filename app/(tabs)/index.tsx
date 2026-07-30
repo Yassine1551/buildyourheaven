@@ -1799,7 +1799,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 0,
+    marginBottom: 2,
   },
   dhikrGrid: {
     flexDirection: 'row',
@@ -1834,7 +1834,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 0,
+    marginBottom: 2,
   },
   dhikrCardTitle: {
     fontSize: 15,
