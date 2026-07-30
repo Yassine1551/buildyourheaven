@@ -42,17 +42,18 @@ interface NotifType {
 const initialNotifications: NotifType[] = [
   { id: '1', title: 'أذكار الصباح', desc: 'حان وقت أذكار الصباح، لا تنسَ ذكر الله', time: '7:00 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
   { id: '2', title: 'أذكار المساء', desc: 'حان وقت أذكار المساء، وقتها الآن', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
-  { id: '3', title: 'أذكار النوم', desc: 'حان وقت أذكار النوم، نم على ذكر الله (10 أذكار)', time: '9:00 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
-  { id: '4', title: 'أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله (4 أذكار)', time: '4:00 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
+  { id: '3', title: 'أذكار النوم', desc: 'حان وقت أذكار النوم، نم على ذكر الله', time: '10:00 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
+  { id: '4', title: 'أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله', time: '6:00 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
 ];
 
-type AlertType = 'morning' | 'evening' | 'sleep';
+type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup';
 
 // Time validation ranges
 const TIME_RANGES: Record<AlertType, { min: number; max: number; label: string }> = {
   morning: { min: 4, max: 11, label: 'أذكار الصباح (4:00 - 11:59)' },
   evening: { min: 12, max: 19, label: 'أذكار المساء (12:00 - 19:59)' },
-  sleep: { min: 20, max: 27, label: 'أذكار النوم (20:00 - 3:59)' }, // 27 means wraps to 3am next day
+  sleep: { min: 20, max: 27, label: 'أذكار النوم (20:00 - 3:59)' },
+  wakeup: { min: 4, max: 11, label: 'أذكار الاستيقاظ (4:00 - 11:59)' },
 };
 
 function isTimeValid(hour: number, type: AlertType): boolean {
@@ -79,11 +80,13 @@ export default function NotificationsScreen() {
   const [morningEnabled, setMorningEnabled] = useState(true);
   const [eveningEnabled, setEveningEnabled] = useState(true);
   const [sleepEnabled, setSleepEnabled] = useState(true);
+  const [wakeupEnabled, setWakeupEnabled] = useState(true);
 
   // Time settings (hour, minute)
   const [morningTime, setMorningTime] = useState({ hour: 7, minute: 0 });
   const [eveningTime, setEveningTime] = useState({ hour: 17, minute: 0 });
-  const [sleepTime, setSleepTime] = useState({ hour: 21, minute: 0 });
+  const [sleepTime, setSleepTime] = useState({ hour: 22, minute: 0 });
+  const [wakeupTime, setWakeupTime] = useState({ hour: 6, minute: 0 });
 
   // Time picker modal
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -101,7 +104,7 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     scheduleNotifications();
-  }, [morningEnabled, eveningEnabled, sleepEnabled, morningTime, eveningTime, sleepTime]);
+  }, [morningEnabled, eveningEnabled, sleepEnabled, wakeupEnabled, morningTime, eveningTime, sleepTime, wakeupTime]);
 
   const requestPermissions = async () => {
     try {
@@ -148,6 +151,21 @@ export default function NotificationsScreen() {
         });
       }
 
+      if (wakeupEnabled) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🌤️ أذكار الاستيقاظ',
+            body: 'حان وقت أذكار الاستيقاظ. استيقظت؟ ابدأ يومك بذكر الله.',
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: wakeupTime.hour,
+            minute: wakeupTime.minute,
+          },
+        });
+      }
+
       if (sleepEnabled) {
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -181,9 +199,12 @@ export default function NotificationsScreen() {
     } else if (type === 'evening') {
       setTempHour(eveningTime.hour);
       setTempMinute(eveningTime.minute);
-    } else {
+    } else if (type === 'sleep') {
       setTempHour(sleepTime.hour);
       setTempMinute(sleepTime.minute);
+    } else {
+      setTempHour(wakeupTime.hour);
+      setTempMinute(wakeupTime.minute);
     }
     setShowTimePicker(true);
   };
@@ -198,8 +219,10 @@ export default function NotificationsScreen() {
       setMorningTime({ hour: tempHour, minute: tempMinute });
     } else if (pickerType === 'evening') {
       setEveningTime({ hour: tempHour, minute: tempMinute });
-    } else {
+    } else if (pickerType === 'sleep') {
       setSleepTime({ hour: tempHour, minute: tempMinute });
+    } else {
+      setWakeupTime({ hour: tempHour, minute: tempMinute });
     }
     setShowTimePicker(false);
   };
@@ -340,6 +363,31 @@ export default function NotificationsScreen() {
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(99,102,241,0.12)' }]}>
                 <MaterialIcons name="bedtime" size={22} color="#6366F1" />
+              </View>
+            </View>
+
+            <View style={styles.scheduleSep} />
+
+            {/* Wakeup */}
+            <View style={styles.scheduleRow}>
+              <Switch
+                value={wakeupEnabled}
+                onValueChange={setWakeupEnabled}
+                trackColor={{ false: '#333', true: '#064E3B' }}
+                thumbColor={wakeupEnabled ? '#D4AF37' : '#999'}
+              />
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>أذكار الاستيقاظ</Text>
+                <Pressable
+                  onPress={() => openTimePicker('wakeup')}
+                  style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
+                >
+                  <MaterialIcons name="access-time" size={12} color={theme.gold} />
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(wakeupTime.hour, wakeupTime.minute)} يومياً</Text>
+                </Pressable>
+              </View>
+              <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(217,119,6,0.12)' }]}>
+                <MaterialIcons name="wb-twilight" size={22} color="#D97706" />
               </View>
             </View>
           </View>
