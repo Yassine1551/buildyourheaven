@@ -997,7 +997,7 @@ export default function DashboardScreen() {
               <>
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                   <TextInput
-                    style={[styles.welcomeInput, { flex: 1 }]}
+                    style={[styles.welcomeInput, { flex: 1, marginBottom: 0 }]}
                     placeholder="اكتب اسمك هنا..."
                     placeholderTextColor="#999"
                     value={customNameInput}
