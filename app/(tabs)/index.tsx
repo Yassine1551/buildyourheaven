@@ -799,7 +799,7 @@ export default function DashboardScreen() {
                       onPress={() => handleDhikrPress(item.id)}
                       style={({ pressed }) => [
                         styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.35 },
                         unlocked && count > 0 && styles.dhikrCardActive,
                         pressed && styles.dhikrCardPressed,
                         !unlocked && pressed && { opacity: 0.5 },
@@ -824,7 +824,7 @@ export default function DashboardScreen() {
                           <View style={styles.dhikrIconCircleLocked}>
                             <MaterialIcons name="lock-outline" size={22} color="rgba(0,0,0,0.25)" />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
+                          <Text style={styles.dhikrCardTitle} numberOfLines={2}>
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlotLocked}>
@@ -1841,12 +1841,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   dhikrReqText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#999',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   // Target Settings Modal
   targetModalOverlay: {
