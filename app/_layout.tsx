@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AlertProvider } from '@/template';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from '../contexts/AppContext';
+import { scheduleAllAdhkar, clearExpiredNotifications } from '../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -56,10 +57,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     checkAndShowWakeup();
+    scheduleAllAdhkar().catch(() => {});
 
     const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && state === 'active') {
         checkAndShowWakeup();
+        clearExpiredNotifications().catch(() => {});
       }
       appState.current = state;
     });
