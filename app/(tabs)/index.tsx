@@ -466,7 +466,7 @@ export default function DashboardScreen() {
   const sortedDhikr = [...dhikrItems].sort((a, b) => a.order - b.order);
   const titleFontSizes: Record<string, number> = {
     nakhla: 14,
-    'salat-nabi': 12,
+    'salat-nabi': 13,
     dhikr_qasr: 14,
     hirz: 12,
     'sadaqat-dhikr': 14,
@@ -835,7 +835,7 @@ export default function DashboardScreen() {
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlotLocked}>
-                            <Text style={styles.dhikrReqText} numberOfLines={3}>
+                            <Text style={styles.dhikrReqText} numberOfLines={2}>
                               {item.unlockRequirement || ''}
                             </Text>
                           </View>
