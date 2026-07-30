@@ -1798,7 +1798,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: 0,
   },
   dhikrGrid: {
     flexDirection: 'row',
