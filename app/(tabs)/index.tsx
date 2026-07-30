@@ -806,7 +806,7 @@ export default function DashboardScreen() {
                       onPress={() => handleDhikrPress(item.id)}
                       style={({ pressed }) => [
                         styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.37 },
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
                         unlocked && count > 0 && styles.dhikrCardActive,
                         pressed && styles.dhikrCardPressed,
                         !unlocked && pressed && { opacity: 0.5 },
