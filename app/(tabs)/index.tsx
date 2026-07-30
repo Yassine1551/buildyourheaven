@@ -111,7 +111,7 @@ export default function DashboardScreen() {
   const {
     hasanat, stats, getElapsedTime, getTargetProgress,
     dhikrCounts, level, istiqama, rankTitle, userName,
-    showWelcome, setUserName, dismissWelcome, isCardUnlocked,
+    showWelcome, loaded, setUserName, dismissWelcome, isCardUnlocked,
     getUnlockRequirement,
     lastCelebration, clearCelebration,
     soundEnabled, vibrationEnabled, toggleSound, toggleVibration,
@@ -953,7 +953,7 @@ export default function DashboardScreen() {
       </Modal>
 
       {/* Welcome Modal */}
-      <Modal visible={showWelcome} transparent animationType="fade">
+      <Modal visible={loaded && showWelcome} transparent animationType="fade">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.welcomeOverlay}
