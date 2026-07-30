@@ -799,43 +799,41 @@ export default function DashboardScreen() {
                       onPress={() => handleDhikrPress(item.id)}
                       style={({ pressed }) => [
                         styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.45 },
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
                         unlocked && count > 0 && styles.dhikrCardActive,
                         pressed && styles.dhikrCardPressed,
                         !unlocked && pressed && { opacity: 0.5 },
                       ]}
                     >
-                      <View style={styles.dhikrCardInner}>
-                        {unlocked ? (
-                          <>
-                            <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
-                              <MaterialIcons name={item.icon as any} size={32} color={item.color} />
-                            </View>
-                            <Text style={styles.dhikrCardTitle} numberOfLines={2}>
-                              {item.title}
+                      {unlocked ? (
+                        <View style={styles.dhikrCardInner}>
+                          <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
+                            <MaterialIcons name={item.icon as any} size={32} color={item.color} />
+                          </View>
+                          <Text style={styles.dhikrCardTitle} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          <View style={styles.dhikrCountSlot}>
+                            <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
+                              {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
                             </Text>
-                            <View style={styles.dhikrCountSlot}>
-                              <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
-                                {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
-                              </Text>
-                            </View>
-                          </>
-                        ) : (
-                          <>
-                            <View style={styles.dhikrIconCircleLocked}>
-                              <MaterialIcons name="lock-outline" size={22} color="rgba(0,0,0,0.25)" />
-                            </View>
-                            <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
-                              {item.title}
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.dhikrCardInnerLocked}>
+                          <View style={styles.dhikrIconCircleLocked}>
+                            <MaterialIcons name="lock-outline" size={22} color="rgba(0,0,0,0.25)" />
+                          </View>
+                          <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          <View style={styles.dhikrCountSlotLocked}>
+                            <Text style={styles.dhikrReqText} numberOfLines={3}>
+                              {item.unlockRequirement || ''}
                             </Text>
-                            <View style={styles.dhikrCountSlot}>
-                              <Text style={styles.dhikrReqText} numberOfLines={2}>
-                                {item.unlockRequirement || ''}
-                              </Text>
-                            </View>
-                          </>
-                        )}
-                      </View>
+                          </View>
+                        </View>
+                      )}
                     </Pressable>
                   </Animated.View>
                 );
@@ -1768,10 +1766,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
+  dhikrCardInnerLocked: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingTop: 6,
+  },
   dhikrCountSlot: {
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  dhikrCountSlotLocked: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   dhikrIconCircleLocked: {
     width: 48,
@@ -1830,13 +1841,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   dhikrReqText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#999',
+    color: '#666',
     textAlign: 'center',
     writingDirection: 'rtl',
-    marginTop: 4,
-    lineHeight: 14,
+    lineHeight: 16,
   },
   // Target Settings Modal
   targetModalOverlay: {
