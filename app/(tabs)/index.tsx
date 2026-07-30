@@ -833,7 +833,7 @@ export default function DashboardScreen() {
                       {unlocked ? (
                         <>
                           <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
-                            <MaterialIcons name={item.icon as any} size={26} color={item.color} />
+                            <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                           </View>
                           <Pressable
                             onPress={() => handleShareDhikr(item)}
@@ -1841,12 +1841,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   dhikrIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   dhikrCardTitle: {
     fontSize: 13,
