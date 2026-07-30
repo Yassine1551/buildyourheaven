@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   fadlText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 30,
