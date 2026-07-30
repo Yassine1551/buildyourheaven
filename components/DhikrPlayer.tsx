@@ -103,7 +103,7 @@ export default function DhikrPlayer({
               <Text style={styles.virtueBadge}>الفضل</Text>
             </View>
           </View>
-          <Text style={[styles.virtueText, { color: hexToRgba(color, 0.9) }]}>{fadl}</Text>
+          <Text style={[styles.virtueText, { color: '#000' }]}>{fadl}</Text>
           <View style={[styles.virtueTargetBox, { backgroundColor: hexToRgba(color, 0.12) }]}>
             <Text style={[styles.virtueTarget, { color: hexToRgba(color, 0.8) }]}>
               العدد المطلوب لنيل الفضل: {formatArabicNumber(targetCount, useWesternNumerals)}
