@@ -817,7 +817,7 @@ export default function DashboardScreen() {
                           <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
                             <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={1}>
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlot}>
@@ -829,9 +829,9 @@ export default function DashboardScreen() {
                       ) : (
                         <View style={styles.dhikrCardInnerLocked}>
                           <View style={styles.dhikrIconCircleLocked}>
-                            <MaterialIcons name="lock-outline" size={22} color="rgba(0,0,0,0.25)" />
+                            <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={1}>
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlotLocked}>
@@ -1792,13 +1792,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   dhikrIconCircleLocked: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   dhikrGrid: {
     flexDirection: 'row',
