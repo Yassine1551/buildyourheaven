@@ -815,7 +815,7 @@ export default function DashboardScreen() {
                               {item.title}
                             </Text>
                             <View style={styles.dhikrCountSlot}>
-                              <Text style={[styles.dhikrCountText, { color: '#000', opacity: count > 0 ? 1 : 0 }]}>
+                              <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
                                 {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
                               </Text>
                             </View>
