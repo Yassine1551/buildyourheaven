@@ -288,7 +288,7 @@ export default function DashboardScreen() {
       }
     } catch (e) {
       console.warn('Share benefit failed:', e);
-      const msg = `✨ فائدة اليوم ✨\n\n${dailyBenefit}\n\n📌 حمّل تطبيق "ابنِ جنتك" - لتغنم كنوز الأذكار 👇\n${appLink}`;
+      const msg = `✨ فائدة اليوم ✨\n\n${dailyBenefit}\n\n------------\n📌 حمّل تطبيق "ابنِ جنتك" - لتغنم كنوز الأذكار 👇\n${appLink}`;
       await Share.share({ message: msg });
     }
     setSharingBenefit(false);
