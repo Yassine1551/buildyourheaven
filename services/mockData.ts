@@ -56,7 +56,7 @@ export const dhikrItems: DhikrItem[] = [
     dhikrText: 'سُبْحَانَ اللَّهِ',
     fadl: 'يُكتَبُ له ألفُ حسنةٍ أو يُحَطُّ عنه ألفُ خطيئةٍ',
     targetCount: 100,
-    icon: 'auto-awesome',
+    icon: 'stars',
     color: '#10B981',
     hasanatPerCount: 10,
     sadaqah: 1,
