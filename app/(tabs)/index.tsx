@@ -1806,7 +1806,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 16,
     gap: 8,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   dhikrCard: {
     borderRadius: 16,
