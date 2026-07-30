@@ -35,7 +35,8 @@ import { captureRef } from 'react-native-view-shot';
 import * as FileSystem from 'expo-file-system';
 import { useAlert } from '@/template';
 import { useApp } from '../../contexts/AppContext';
-import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, formatCompactNumber, getRandomBenefit, formatExtraLife } from '../../services/mockData';
+import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, formatCompactNumber, formatExtraLife } from '../../services/mockData';
+import { DHIKR_BENEFITS_POOL } from '../../constants/benefits';
 import { CARD_BADGE_DEFINITIONS, TIER_INFO } from '../../constants/badges';
 import { theme } from '../../constants/theme';
 
@@ -236,11 +237,11 @@ export default function DashboardScreen() {
   }, []);
 
   // Track dashboard focus state
-  const [dailyBenefit, setDailyBenefit] = useState(getRandomBenefit);
+  const [dailyBenefit, setDailyBenefit] = useState('');
   useFocusEffect(
     useCallback(() => {
       setIsFocused(true);
-      setDailyBenefit(getRandomBenefit());
+      setDailyBenefit(DHIKR_BENEFITS_POOL[Math.floor(Math.random() * DHIKR_BENEFITS_POOL.length)]);
       return () => setIsFocused(false);
     }, [])
   );
