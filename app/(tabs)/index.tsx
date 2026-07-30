@@ -799,7 +799,7 @@ export default function DashboardScreen() {
                       onPress={() => handleDhikrPress(item.id)}
                       style={({ pressed }) => [
                         styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.35 },
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.45 },
                         unlocked && count > 0 && styles.dhikrCardActive,
                         pressed && styles.dhikrCardPressed,
                         !unlocked && pressed && { opacity: 0.5 },
@@ -823,7 +823,7 @@ export default function DashboardScreen() {
                         ) : (
                           <>
                             <View style={styles.dhikrIconCircleLocked}>
-                              <MaterialIcons name="lock-outline" size={28} color="rgba(0,0,0,0.25)" />
+                              <MaterialIcons name="lock-outline" size={22} color="rgba(0,0,0,0.25)" />
                             </View>
                             <Text style={[styles.dhikrCardTitle, { color: '#333' }]} numberOfLines={2}>
                               {item.title}
@@ -1769,18 +1769,18 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dhikrCountSlot: {
-    height: 24,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dhikrIconCircleLocked: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dhikrGrid: {
     flexDirection: 'row',
