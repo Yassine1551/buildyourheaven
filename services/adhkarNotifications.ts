@@ -14,7 +14,7 @@ export async function scheduleAllAdhkar() {
     identifier: NOTIFICATION_IDS.WAKEUP,
     content: {
       title: 'أذكار الاستيقاظ ☀️',
-      body: 'ابدأ يومك بأذكار الاستيقاظ',
+      body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
     },
     trigger: { hour: 4, minute: 30, repeats: true },
   });
@@ -23,7 +23,7 @@ export async function scheduleAllAdhkar() {
     identifier: NOTIFICATION_IDS.MORNING,
     content: {
       title: 'أذكار الصباح 🌅',
-      body: 'حان وقت أذكار الصباح',
+      body: 'فاذكروني أذكركم - حان وقت أذكار الصباح',
     },
     trigger: { hour: 6, minute: 25, repeats: true },
   });
@@ -32,7 +32,7 @@ export async function scheduleAllAdhkar() {
     identifier: NOTIFICATION_IDS.EVENING,
     content: {
       title: 'أذكار المساء 🌇',
-      body: 'حان وقت أذكار المساء',
+      body: 'فاذكروني أذكركم - حان وقت أذكار المساء',
     },
     trigger: { hour: 17, minute: 0, repeats: true },
   });
@@ -41,7 +41,7 @@ export async function scheduleAllAdhkar() {
     identifier: NOTIFICATION_IDS.SLEEP,
     content: {
       title: 'أذكار النوم 🌙',
-      body: 'نم على ذكر الله',
+      body: 'فاذكروني أذكركم - نم على ذكر الله',
     },
     trigger: { hour: 21, minute: 30, repeats: true },
   });
