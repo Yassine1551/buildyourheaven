@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "ابنِ جنتك",
+    "slug": "mihrab-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "scheme": "mihrab",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#0B1E16"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "VIBRATE"
+      ],
+      "package": "build.your.heaven.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B1E16"
+        }
+      ],
+      "expo-web-browser",
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "owner": "yassine1551"
+  }
+}
