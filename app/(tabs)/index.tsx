@@ -461,7 +461,7 @@ export default function DashboardScreen() {
   };
 
   const statCardWidth = (SCREEN_WIDTH - 32 - 36) / 4;
-  const dhikrCardWidth = (SCREEN_WIDTH - 24 - 16) / 3;
+  const dhikrCardWidth = (SCREEN_WIDTH - 32 - 24) / 3;
 
   const sortedDhikr = [...dhikrItems].sort((a, b) => a.order - b.order);
   const titleFontSizes: Record<string, number> = {
@@ -1805,7 +1805,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 8,
     justifyContent: 'flex-end',
   },
   dhikrCard: {
