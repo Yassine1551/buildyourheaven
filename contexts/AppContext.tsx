@@ -94,16 +94,18 @@ function computeIsUnlocked(
   if (isDevUnlocked) return true;
   switch (dhikrId) {
     case 'maghfira': return true;
-    case 'alf-hasana': return (counts['maghfira'] || 0) >= 10;
-    case 'nakhla': return (counts['alf-hasana'] || 0) >= 2;
-    case 'salat-nabi': return (counts['nakhla'] || 0) >= 300;
-    case 'thuluth-quran': return (counts['salat-nabi'] || 0) >= 100;
-    case 'kanz': return (stats.khatma || 0) >= 50;
-    case 'dhikr_qasr': return (counts['kanz'] || 0) >= 500;
-    case 'sadaqat-dhikr': return (counts['dhikr_qasr'] || 0) >= 50;
-    case 'jawamie': return (counts['kanz'] || 0) >= 750;
-    case 'jawahir': return (counts['kanz'] || 0) >= 1000;
-    case 'milul-mizan': return (counts['jawahir'] || 0) >= 10;
+    case 'alf-hasana': return (counts['maghfira'] || 0) >= 5;
+    case 'nakhla': return (counts['alf-hasana'] || 0) >= 3;
+    case 'hatt-khataya': return (counts['nakhla'] || 0) >= 5;
+    case 'salat-nabi': return (counts['hatt-khataya'] || 0) >= 10;
+    case 'thuluth-quran': return (counts['salat-nabi'] || 0) >= 20;
+    case 'kanz': return (counts['thuluth-quran'] || 0) >= 10;
+    case 'dhikr_qasr': return (counts['kanz'] || 0) >= 15;
+    case 'milul-mizan': return (counts['dhikr_qasr'] || 0) >= 10;
+    case 'sadaqat-dhikr': return (counts['milul-mizan'] || 0) >= 15;
+    case 'hirz': return (counts['sadaqat-dhikr'] || 0) >= 20;
+    case 'jawamie': return (counts['hirz'] || 0) >= 15;
+    case 'jawahir': return (counts['jawamie'] || 0) >= 30;
     default: return false;
   }
 }
@@ -593,18 +595,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getUnlockRequirement = useCallback((dhikrId: string): string => {
     switch (dhikrId) {
-      case 'alf-hasana': { const r = Math.max(0, 10 - (dhikrCounts['maghfira'] || 0)); return r > 0 ? `مطلوب 10 مغفرة الذنوب (متبقي: ${r})` : ''; }
-      case 'nakhla': { const r = Math.max(0, 5 - (dhikrCounts['alf-hasana'] || 0)); return r > 0 ? `مطلوب 5 ألف حسنة (متبقي: ${r})` : ''; }
-      case 'salat-nabi': { const r = Math.max(0, 500 - (dhikrCounts['nakhla'] || 0)); return r > 0 ? `مطلوب 500 نخلة (متبقي: ${r})` : ''; }
-      case 'thuluth-quran': { const r = Math.max(0, 100 - (dhikrCounts['salat-nabi'] || 0)); return r > 0 ? `مطلوب 100 صلاة على النبي (متبقي: ${r})` : ''; }
-      case 'kanz': { const r = Math.max(0, 50 - (stats.khatma || 0)); return r > 0 ? `مطلوب 50 ختمة (متبقي: ${r})` : ''; }
-      case 'dhikr_qasr': { const r = Math.max(0, 500 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 500 كنز الجنة (متبقي: ${r})` : ''; }
-      case 'sadaqat-dhikr': { const r = Math.max(0, 50 - (dhikrCounts['dhikr_qasr'] || 0)); return r > 0 ? `مطلوب 50 قصر في الجنة (متبقي: ${r})` : ''; }
-      case 'jawamie': { const r = Math.max(0, 750 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 750 كنز الجنة (متبقي: ${r})` : ''; }
-      case 'jawahir': { const r = Math.max(0, 1000 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 1000 كنز الجنة (متبقي: ${r})` : ''; }
-      case 'milul-mizan': { const r = Math.max(0, 10 - (dhikrCounts['jawahir'] || 0)); return r > 0 ? `مطلوب 10 جوهرة الأذكار (متبقي: ${r})` : ''; }
-      case 'hatt-khataya': return 'غير متاحة في النظام الحالي';
-      case 'hirz': return 'غير متاحة في النظام الحالي';
+      case 'alf-hasana': { const r = Math.max(0, 5 - (dhikrCounts['maghfira'] || 0)); return r > 0 ? `مطلوب 5 مغفرة الذنوب (متبقي: ${r})` : ''; }
+      case 'nakhla': { const r = Math.max(0, 3 - (dhikrCounts['alf-hasana'] || 0)); return r > 0 ? `مطلوب 3 ألف حسنة (متبقي: ${r})` : ''; }
+      case 'hatt-khataya': { const r = Math.max(0, 5 - (dhikrCounts['nakhla'] || 0)); return r > 0 ? `مطلوب 5 نخلة في الجنة (متبقي: ${r})` : ''; }
+      case 'salat-nabi': { const r = Math.max(0, 10 - (dhikrCounts['hatt-khataya'] || 0)); return r > 0 ? `مطلوب 10 حط الخطايا (متبقي: ${r})` : ''; }
+      case 'thuluth-quran': { const r = Math.max(0, 20 - (dhikrCounts['salat-nabi'] || 0)); return r > 0 ? `مطلوب 20 صلاة على النبي (متبقي: ${r})` : ''; }
+      case 'kanz': { const r = Math.max(0, 10 - (dhikrCounts['thuluth-quran'] || 0)); return r > 0 ? `مطلوب 10 ثلث القرآن (متبقي: ${r})` : ''; }
+      case 'dhikr_qasr': { const r = Math.max(0, 15 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 15 كنز الجنة (متبقي: ${r})` : ''; }
+      case 'milul-mizan': { const r = Math.max(0, 10 - (dhikrCounts['dhikr_qasr'] || 0)); return r > 0 ? `مطلوب 10 قصر في الجنة (متبقي: ${r})` : ''; }
+      case 'sadaqat-dhikr': { const r = Math.max(0, 15 - (dhikrCounts['milul-mizan'] || 0)); return r > 0 ? `مطلوب 15 ملء الميزان (متبقي: ${r})` : ''; }
+      case 'hirz': { const r = Math.max(0, 20 - (dhikrCounts['sadaqat-dhikr'] || 0)); return r > 0 ? `مطلوب 20 صدقات الأذكار (متبقي: ${r})` : ''; }
+      case 'jawamie': { const r = Math.max(0, 15 - (dhikrCounts['hirz'] || 0)); return r > 0 ? `مطلوب 15 حرز من الشيطان (متبقي: ${r})` : ''; }
+      case 'jawahir': { const r = Math.max(0, 30 - (dhikrCounts['jawamie'] || 0)); return r > 0 ? `مطلوب 30 جوامع الكلم (متبقي: ${r})` : ''; }
       default: return '';
     }
   }, [dhikrCounts, stats]);
