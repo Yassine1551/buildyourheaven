@@ -18,37 +18,57 @@ export async function scheduleAllAdhkar() {
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_IDS.WAKEUP,
     content: {
-      title: 'أذكار الاستيقاظ ☀️',
+      title: '☀️ أذكار الاستيقاظ',
       body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
+      data: { route: '/wakeup-adhkar' },
     },
-    trigger: { hour: 4, minute: 30, repeats: true },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 4,
+      minute: 30,
+    },
   });
 
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_IDS.MORNING,
     content: {
-      title: 'أذكار الصباح 🌅',
+      title: '🌅 أذكار الصباح',
       body: 'فاذكروني أذكركم - حان وقت أذكار الصباح',
+      data: { route: '/morning-adhkar' },
     },
-    trigger: { hour: 6, minute: 25, repeats: true },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 6,
+      minute: 25,
+    },
   });
 
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_IDS.EVENING,
     content: {
-      title: 'أذكار المساء 🌇',
+      title: '🌇 أذكار المساء',
       body: 'فاذكروني أذكركم - حان وقت أذكار المساء',
+      data: { route: '/evening-adhkar' },
     },
-    trigger: { hour: 17, minute: 0, repeats: true },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 17,
+      minute: 0,
+    },
   });
 
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_IDS.SLEEP,
     content: {
-      title: 'أذكار النوم 🌙',
+      title: '🌙 أذكار النوم',
       body: 'فاذكروني أذكركم - نم على ذكر الله',
+      data: { route: '/sleep-adhkar' },
     },
-    trigger: { hour: 21, minute: 30, repeats: true },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 21,
+      minute: 30,
+    },
   });
 }
 

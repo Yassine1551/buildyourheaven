@@ -120,6 +120,7 @@ export default function NotificationsScreen() {
           content: {
             title: '🌅 أذكار الصباح',
             body: 'فاذكروني أذكركم - حان وقت أذكار الصباح',
+            data: { route: '/morning-adhkar' },
             sound: true,
           },
           trigger: {
@@ -133,8 +134,9 @@ export default function NotificationsScreen() {
       if (eveningEnabled) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: '🌙 أذكار المساء',
+            title: '🌇 أذكار المساء',
             body: 'فاذكروني أذكركم - حان وقت أذكار المساء',
+            data: { route: '/evening-adhkar' },
             sound: true,
           },
           trigger: {
@@ -148,8 +150,9 @@ export default function NotificationsScreen() {
       if (wakeupEnabled) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: '🌤️ أذكار الاستيقاظ',
+            title: '☀️ أذكار الاستيقاظ',
             body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
+            data: { route: '/wakeup-adhkar' },
             sound: true,
           },
           trigger: {
@@ -163,8 +166,9 @@ export default function NotificationsScreen() {
       if (sleepEnabled) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: '🌜 أذكار النوم',
+            title: '🌙 أذكار النوم',
             body: 'فاذكروني أذكركم - نم على ذكر الله',
+            data: { route: '/sleep-adhkar' },
             sound: true,
           },
           trigger: {

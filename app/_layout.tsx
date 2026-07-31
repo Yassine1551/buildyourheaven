@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, Platform, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AlertProvider } from '@/template';
@@ -41,8 +41,9 @@ async function checkAndShowWakeup() {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🌅 أذكار الاستيقاظ',
-        body: 'فاذكروني أذكركم - ابدأ يومك بذكر الله',
+        title: '☀️ أذكار الاستيقاظ',
+        body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
+        data: { route: '/wakeup-adhkar' },
         sound: true,
       },
       trigger: null,
@@ -54,10 +55,24 @@ async function checkAndShowWakeup() {
 export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const [showLogo, setShowLogo] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     checkAndShowWakeup();
     scheduleAllAdhkar().catch(() => {});
+
+    const notificationSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const route = response.notification.request.content.data?.route as string | undefined;
+      if (route) {
+        router.push(route as never);
+      }
+    });
+
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response?.notification.request.content.data?.route) {
+        router.push(response.notification.request.content.data.route as never);
+      }
+    });
 
     const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && state === 'active') {
@@ -70,6 +85,7 @@ export default function RootLayout() {
     const timer = setTimeout(() => setShowLogo(false), 1800);
 
     return () => {
+      notificationSub.remove();
       subscription.remove();
       clearTimeout(timer);
     };
