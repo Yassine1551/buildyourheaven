@@ -835,7 +835,7 @@ export default function DashboardScreen() {
                             {item.title}
                           </Text>
                           <View style={styles.dhikrCountSlotLocked}>
-                            <Text style={styles.dhikrReqText} numberOfLines={2}>
+                            <Text style={styles.dhikrReqText} numberOfLines={3}>
                               {item.unlockRequirement || ''}
                             </Text>
                           </View>
