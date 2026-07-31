@@ -1850,12 +1850,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   dhikrReqText: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#999',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 15,
+    lineHeight: 17,
   },
   // Target Settings Modal
   targetModalOverlay: {
