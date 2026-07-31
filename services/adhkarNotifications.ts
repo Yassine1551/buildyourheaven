@@ -9,7 +9,12 @@ const NOTIFICATION_IDS = {
   SLEEP: 'sleep_adhkar',
 };
 
+export async function purgeOldNotifications() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
 export async function scheduleAllAdhkar() {
+  await purgeOldNotifications();
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_IDS.WAKEUP,
     content: {
