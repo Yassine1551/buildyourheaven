@@ -39,6 +39,7 @@ import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, for
 import { DHIKR_BENEFITS_POOL } from '../../constants/benefits';
 import { CARD_BADGE_DEFINITIONS, TIER_INFO } from '../../constants/badges';
 import { theme } from '../../constants/theme';
+import WirdSettingsModal from '../../components/WirdSettingsModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -122,9 +123,11 @@ export default function DashboardScreen() {
     isDevUnlocked, toggleDevUnlock,
     shouldShowReview, markReviewAsRated, deferReview,
     gender, setGender,
+    wirdConfig, wirdCounts,
   } = useApp();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showWirdSettings, setShowWirdSettings] = useState(false);
   const [showExtraLifeInfo, setShowExtraLifeInfo] = useState(false);
   const [customNameInput, setCustomNameInput] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
@@ -742,6 +745,70 @@ export default function DashboardScreen() {
             return null;
           })()}
 
+          {/* وردي الخاص */}
+          <Animated.View entering={FadeInDown.delay(290).duration(500)} style={styles.morningSection}>
+            <View style={styles.wirdCardWrap}>
+              <Pressable
+                onPress={() => router.push('/wird')}
+                style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+              >
+                <View style={styles.morningCard}>
+                  <LinearGradient
+                    colors={['rgba(212,175,55,0.12)', 'rgba(6,78,59,0.2)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+                  />
+                  <View style={styles.morningCardContent}>
+                    <View style={styles.morningNavGroup}>
+                      <MaterialIcons name="chevron-left" size={22} color={theme.gold} />
+                      <Pressable
+                        onPress={() => setShowWirdSettings(true)}
+                        style={({ pressed }) => [styles.wirdGearBtn, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+                      >
+                        <MaterialIcons name="settings" size={16} color={theme.gold} />
+                      </Pressable>
+                    </View>
+                    <View style={styles.morningCardText}>
+                      <Text style={styles.morningCardTitle}>وردي الخاص</Text>
+                      <Text style={styles.morningCardSubtitle}>
+                        {(() => {
+                          const enabled = wirdConfig.filter(i => i.enabled);
+                          const doneToday = enabled.filter(i => (wirdCounts[i.id] || 0) >= i.target).length;
+                          return enabled.length === 0
+                            ? 'أضف أذكارك وفعّلها'
+                            : `${enabled.length} أذكار مفعلة • أتممت ${doneToday} اليوم`;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={styles.morningIconCircle}>
+                      <MaterialIcons name="favorite" size={22} color={theme.gold} />
+                    </View>
+                  </View>
+                  {(() => {
+                    const enabled = wirdConfig.filter(i => i.enabled);
+                    const doneToday = enabled.filter(i => (wirdCounts[i.id] || 0) >= i.target).length;
+                    const pct = enabled.length ? Math.round((doneToday / enabled.length) * 100) : 0;
+                    if (enabled.length === 0) return null;
+                    return (
+                      <View style={styles.wirdProgressWrap}>
+                        <View style={styles.wirdProgressHeader}>
+                          <Text style={styles.wirdProgressLabel}>إنجاز ورد اليوم</Text>
+                          <Text style={styles.wirdProgressValue}>
+                            {formatArabicNumber(doneToday, useWesternNumerals)}/{formatArabicNumber(enabled.length, useWesternNumerals)}
+                          </Text>
+                        </View>
+                        <View style={styles.wirdProgressBarBg}>
+                          <View style={[styles.wirdProgressBarFill, { width: `${Math.max(pct, 2)}%` }]} />
+                        </View>
+                      </View>
+                    );
+                  })()}
+                </View>
+              </Pressable>
+            </View>
+          </Animated.View>
+
           {/* فائدة اليوم */}
           <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.benefitSection}>
             <Pressable
@@ -812,9 +879,11 @@ export default function DashboardScreen() {
                           <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
                             <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
-                            {item.title}
-                          </Text>
+                          <View style={styles.dhikrTitleCenter}>
+                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                          </View>
                           <View style={styles.dhikrCountSlot}>
                             <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
                               {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
@@ -826,9 +895,11 @@ export default function DashboardScreen() {
                           <View style={styles.dhikrIconCircleLocked}>
                             <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
                           </View>
-                          <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
-                            {item.title}
-                          </Text>
+                          <View style={styles.dhikrTitleCenter}>
+                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                          </View>
                           <View style={styles.dhikrCountSlotLocked}>
                             <Text style={styles.dhikrReqText} numberOfLines={3}>
                               {item.unlockRequirement || ''}
@@ -1514,6 +1585,11 @@ export default function DashboardScreen() {
           </View>
         );
       })()}
+
+      <WirdSettingsModal
+        visible={showWirdSettings}
+        onClose={() => setShowWirdSettings(false)}
+      />
     </View>
   );
 }
@@ -1721,6 +1797,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  morningNavGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   morningCardText: {
     flex: 1,
     alignItems: 'flex-end',
@@ -1746,6 +1827,56 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,158,11,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  wirdCardWrap: {
+    position: 'relative',
+  },
+  wirdGearBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(212,175,55,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wirdProgressWrap: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(212,175,55,0.18)',
+  },
+  wirdProgressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  wirdProgressLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.textSecondary,
+    writingDirection: 'rtl',
+  },
+  wirdProgressValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.gold,
+    writingDirection: 'rtl',
+  },
+  wirdProgressBarBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  wirdProgressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: theme.gold,
   },
   benefitSection: {
     paddingHorizontal: 16,
@@ -1831,9 +1962,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   dhikrIconCircleLocked: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1867,12 +1998,19 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   dhikrIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
+  },
+  dhikrTitleCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 2,
   },
   dhikrCardTitle: {
     fontSize: 15,

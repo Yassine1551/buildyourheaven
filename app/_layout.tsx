@@ -113,36 +113,49 @@ export default function RootLayout() {
             <Stack.Screen
               name="mihrab"
               options={{
-                presentation: 'fullScreenModal',
+                presentation: 'card',
                 animation: 'slide_from_bottom',
+                animationDuration: 300,
               }}
             />
             <Stack.Screen
               name="morning-adhkar"
               options={{
-                presentation: 'fullScreenModal',
+                presentation: 'card',
                 animation: 'slide_from_bottom',
+                animationDuration: 300,
               }}
             />
             <Stack.Screen
               name="sleep-adhkar"
               options={{
-                presentation: 'fullScreenModal',
+                presentation: 'card',
                 animation: 'slide_from_bottom',
+                animationDuration: 300,
               }}
             />
             <Stack.Screen
               name="evening-adhkar"
               options={{
-                presentation: 'fullScreenModal',
+                presentation: 'card',
                 animation: 'slide_from_bottom',
+                animationDuration: 300,
               }}
             />
             <Stack.Screen
               name="wakeup-adhkar"
               options={{
-                presentation: 'fullScreenModal',
+                presentation: 'card',
                 animation: 'slide_from_bottom',
+                animationDuration: 300,
+              }}
+            />
+            <Stack.Screen
+              name="wird"
+              options={{
+                presentation: 'card',
+                animation: 'slide_from_bottom',
+                animationDuration: 300,
               }}
             />
             <Stack.Screen

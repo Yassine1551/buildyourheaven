@@ -9,6 +9,7 @@ import { morningAdhkarItems } from '../services/morningAdhkar';
 import { sleepAdhkarItems } from '../services/sleepAdhkar';
 import { eveningAdhkarItems } from '../services/eveningAdhkar';
 import { wakeupAdhkarItems } from '../services/wakeupAdhkar';
+import { WirdDhikrItem, DEFAULT_WIRD_ITEMS, WIRD_CONFIG_VERSION } from '../services/personalWird';
 
 type ReviewState = 'pristine' | 'deferred' | 'rated';
 
@@ -27,6 +28,9 @@ interface AppState {
   sleepCounts: Record<string, number>;
   eveningCounts: Record<string, number>;
   wakeupCounts: Record<string, number>;
+  wirdConfig: WirdDhikrItem[];
+  wirdCounts: Record<string, number>;
+  wirdDate: string;
 }
 
 interface AppContextType extends AppState {
@@ -62,6 +66,8 @@ interface AppContextType extends AppState {
   completeEveningDhikr: (dhikrId: string) => void;
   incrementWakeupDhikr: (dhikrId: string) => void;
   completeWakeupDhikr: (dhikrId: string) => void;
+  updateWirdConfig: (config: WirdDhikrItem[]) => void;
+  incrementWirdDhikr: (dhikrId: string) => void;
   getTotalGlobalDhikr: () => number;
   isDevUnlocked: boolean;
   toggleDevUnlock: () => void;
@@ -136,6 +142,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sleepCounts, setSleepCounts] = useState<Record<string, number>>({});
   const [eveningCounts, setEveningCounts] = useState<Record<string, number>>({});
   const [wakeupCounts, setWakeupCounts] = useState<Record<string, number>>({});
+  const [wirdConfig, setWirdConfig] = useState<WirdDhikrItem[]>(DEFAULT_WIRD_ITEMS);
+  const [wirdCounts, setWirdCounts] = useState<Record<string, number>>({});
+  const [wirdDate, setWirdDate] = useState<string>('');
   const [gender, setGenderState] = useState<'male' | 'female' | ''>('');
   const [epithet, setEpithetState] = useState('');
   const [badges, setBadges] = useState<string[]>([]);
@@ -160,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, reviewState, gender, epithet, badges]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -171,7 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal] = await Promise.all([
+      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([
         AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
@@ -194,6 +203,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem('sleep_counts'),
         AsyncStorage.getItem('daily_log'),
         AsyncStorage.getItem('daily_goal'),
+        AsyncStorage.getItem('wird_config'),
+        AsyncStorage.getItem('wird_counts'),
+        AsyncStorage.getItem('wird_date'),
       ]);
       if (savedHasanat) setHasanat(JSON.parse(savedHasanat));
       if (savedDhikr) setDhikrCounts(JSON.parse(savedDhikr));
@@ -218,6 +230,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedSleepCounts) setSleepCounts(JSON.parse(savedSleepCounts));
       if (savedDailyLog) setDailyLog(JSON.parse(savedDailyLog));
       if (savedDailyGoal) setDailyGoalState(JSON.parse(savedDailyGoal));
+      if (savedWirdConfig) {
+        try {
+          const parsed = JSON.parse(savedWirdConfig);
+          if (Array.isArray(parsed)) {
+            const defById = new Map(DEFAULT_WIRD_ITEMS.map(d => [d.id, d]));
+            const savedById = new Map(parsed.map(s => [s.id, s]));
+            const merged: WirdDhikrItem[] = DEFAULT_WIRD_ITEMS.map(def => {
+              const saved = savedById.get(def.id);
+              return saved ? { ...saved, title: def.title, text: def.text } : { ...def };
+            });
+            parsed.filter(s => !defById.has(s.id)).forEach(s => merged.push(s));
+            setWirdConfig(merged);
+          }
+        } catch (e) {}
+      }
+      if (savedWirdCounts) setWirdCounts(JSON.parse(savedWirdCounts));
+      if (savedWirdDate) setWirdDate(savedWirdDate);
+      const today = getTodayDateString();
+      if (!savedWirdDate || savedWirdDate !== today) {
+        setWirdCounts({});
+        setWirdDate(today);
+      }
       const savedEveningCounts = await AsyncStorage.getItem('evening_counts');
       if (savedEveningCounts) setEveningCounts(JSON.parse(savedEveningCounts));
       const savedWakeupCounts = await AsyncStorage.getItem('wakeup_counts');
@@ -256,6 +290,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('evening_counts', JSON.stringify(eveningCounts)),
         AsyncStorage.setItem('wakeup_counts', JSON.stringify(wakeupCounts)),
         AsyncStorage.setItem('review_state', JSON.stringify(reviewState)),
+        AsyncStorage.setItem('wird_config', JSON.stringify(wirdConfig)),
+        AsyncStorage.setItem('wird_config_version', String(WIRD_CONFIG_VERSION)),
+        AsyncStorage.setItem('wird_counts', JSON.stringify(wirdCounts)),
+        AsyncStorage.setItem('wird_date', wirdDate),
       ]);
     } catch (e) {}
   };
@@ -273,8 +311,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     Object.values(sleepCounts).forEach(v => { total += v; });
     Object.values(eveningCounts).forEach(v => { total += v; });
     Object.values(wakeupCounts).forEach(v => { total += v; });
+    Object.values(wirdCounts).forEach(v => { total += v; });
     return total;
-  }, [dhikrCounts, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts]);
+  }, [dhikrCounts, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdCounts]);
 
   const getTodayDateString = useCallback(() => {
     const now = new Date();
@@ -575,6 +614,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     applyRewardResult(result);
   }, [applyRewardResult]);
 
+  const completeWirdDhikr = useCallback((dhikrId: string) => {
+    const item = wirdConfig.find(d => d.id === dhikrId);
+    if (!item) return;
+    const result = calculateAndApplyRewards({ id: item.id, text: item.text, target: item.target, isQuran: false, syncTarget: item.syncTarget });
+    applyRewardResult(result);
+  }, [wirdConfig, applyRewardResult]);
+
+  const incrementWirdDhikr = useCallback((dhikrId: string) => {
+    const item = wirdConfig.find(d => d.id === dhikrId && d.enabled);
+    if (!item) return;
+    const oldGlobalTotal = getTotalGlobalDhikr();
+    const current = (wirdCounts[dhikrId] || 0) + 1;
+    setWirdCounts(prev => ({ ...prev, [dhikrId]: current }));
+    setHasanat(prev => prev + 10);
+    setIstiqama(prev => prev + 1);
+    incrementTodayCount();
+    const newLevel = Math.floor((istiqama + 1) / 50) + 1;
+    if (newLevel > level) setLevel(newLevel);
+    handleAdhkarTickEffects(oldGlobalTotal);
+    if (current === item.target) {
+      completeWirdDhikr(dhikrId);
+    }
+  }, [wirdConfig, wirdCounts, istiqama, level, getTotalGlobalDhikr, handleAdhkarTickEffects, incrementTodayCount, completeWirdDhikr]);
+
+  const updateWirdConfig = useCallback((config: WirdDhikrItem[]) => {
+    setWirdConfig(config);
+  }, []);
+
   const resetDhikr = useCallback((dhikrId: string) => {
     setDhikrCounts(prev => ({ ...prev, [dhikrId]: 0 }));
     if (dhikrId === 'alf-hasana' || dhikrId === 'dhikr_qasr') {
@@ -668,11 +735,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWakeupCounts({});
     setDailyLog({});
     setDailyGoalState(500);
+    setWirdConfig(DEFAULT_WIRD_ITEMS);
+    setWirdCounts({});
+    setWirdDate('');
     try {
       await AsyncStorage.multiRemove([
         'hasanat_total', 'dhikr_counts', 'internal_dhikr_counts',
         'stats_data', 'morning_counts', 'sleep_counts', 'evening_counts',
-        'wakeup_counts', 'daily_log', 'daily_goal',
+        'wakeup_counts', 'daily_log', 'daily_goal', 'wird_config',
+        'wird_config_version', 'wird_counts', 'wird_date',
       ]);
     } catch (e) {}
   }, []);
@@ -708,6 +779,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWakeupCounts({});
     setDailyLog({});
     setDailyGoalState(500);
+    setWirdConfig(DEFAULT_WIRD_ITEMS);
+    setWirdCounts({});
+    setWirdDate('');
     setReviewState('pristine');
     setShouldShowReview(false);
     try {
@@ -726,12 +800,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         hasanat, dhikrCounts, stats, targetStartDate, userName, showWelcome, level, istiqama,
         unlockedCards, lastCelebration, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
+        wirdConfig, wirdCounts, wirdDate,
         incrementDhikr, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
         dismissWelcome, isCardUnlocked, getUnlockRequirement, clearCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,
         toggleNumeralSystem, isDarkMode, toggleDarkMode, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
         incrementMorningDhikr, completeMorningDhikr, incrementSleepDhikr, completeSleepDhikr,
         incrementEveningDhikr, completeEveningDhikr, incrementWakeupDhikr, completeWakeupDhikr,
+        updateWirdConfig, incrementWirdDhikr,
         getTotalGlobalDhikr, isDevUnlocked, toggleDevUnlock,
         reviewState, shouldShowReview, markReviewAsRated, deferReview,
         gender, setGender, epithet, setEpithet, badges, loaded,
