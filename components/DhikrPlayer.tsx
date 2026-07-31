@@ -43,6 +43,7 @@ interface DhikrPlayerProps {
   letterCount?: number;
   buttonScale: SharedValue<number>;
   fontSizeReduction?: number;
+  isDarkMode?: boolean;
 }
 
 export default function DhikrPlayer({
@@ -63,6 +64,7 @@ export default function DhikrPlayer({
   letterCount,
   buttonScale,
   fontSizeReduction = 0,
+  isDarkMode = false,
 }: DhikrPlayerProps) {
   const [showInfo, setShowInfo] = useState(false);
   const progress = Math.min(sessionCount / targetCount, 1);
@@ -90,10 +92,10 @@ export default function DhikrPlayer({
   };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, isDarkMode && styles.rootDark]}>
       {/* Virtue Frame (fixed above scroll) */}
       {fadl ? (
-        <View style={[styles.virtueFrame, { backgroundColor: hexToRgba(color, 0.08), borderColor: hexToRgba(color, 0.3) }]}>
+        <View style={[styles.virtueFrame, { backgroundColor: isDarkMode ? hexToRgba(color, 0.15) : hexToRgba(color, 0.08), borderColor: hexToRgba(color, isDarkMode ? 0.45 : 0.3) }]}>
           <View style={styles.virtueHeaderRow}>
             <Pressable onPress={onShare} style={({ pressed }) => [styles.virtueShareBtn, { borderColor: hexToRgba(color, 0.3), borderWidth: 1 }, pressed && { opacity: 0.5 }]}>
               <MaterialIcons name="share" size={14} color={color} />
@@ -103,9 +105,9 @@ export default function DhikrPlayer({
               <Text style={styles.virtueBadge}>الفضل</Text>
             </View>
           </View>
-          <Text style={[styles.virtueText, { color: '#000' }]}>{fadl}</Text>
-          <View style={[styles.virtueTargetBox, { backgroundColor: hexToRgba(color, 0.12) }]}>
-            <Text style={[styles.virtueTarget, { color: hexToRgba(color, 0.8) }]}>
+          <Text style={[styles.virtueText, isDarkMode ? { color: '#E8F1EC' } : { color: '#000' }]}>{fadl}</Text>
+          <View style={[styles.virtueTargetBox, { backgroundColor: hexToRgba(color, isDarkMode ? 0.2 : 0.12) }]}>
+            <Text style={[styles.virtueTarget, { color: isDarkMode ? hexToRgba(color, 0.95) : hexToRgba(color, 0.8) }]}>
               العدد المطلوب لنيل الفضل: {formatArabicNumber(targetCount, useWesternNumerals)}
             </Text>
           </View>
@@ -115,21 +117,21 @@ export default function DhikrPlayer({
       {/* Text Area - fills space between virtue frame and info card */}
       <View style={styles.textArea}>
         {isJawahir ? (
-          <View style={styles.jawahirCard}>
+          <View style={[styles.jawahirCard, isDarkMode && styles.jawahirCardDark]}>
             <View style={styles.jawahirScrollWrap}>
               <ScrollView
                 style={styles.jawahirScroll}
                 contentContainerStyle={styles.jawahirContent}
                 showsVerticalScrollIndicator={true}
                 persistentScrollbar={true}
-                indicatorStyle="black"
+                indicatorStyle={isDarkMode ? 'white' : 'black'}
                 nestedScrollEnabled
               >
                 {dhikrText.split(/[،—]/).map(s => s.trim()).filter(Boolean).map((part, idx) => {
                   if (part.startsWith('سُبْحَانَ اللهِ')) {
                     const rest = part.substring('سُبْحَانَ اللهِ'.length).trim();
                     return (
-                      <Text key={idx} style={styles.jawahirLine}>
+                      <Text key={idx} style={[styles.jawahirLine, isDarkMode && styles.jawahirLineDark]}>
                         <Text style={styles.jawahirKeyword}>سُبْحَانَ اللهِ </Text>
                         {rest}
                       </Text>
@@ -138,17 +140,17 @@ export default function DhikrPlayer({
                   if (part.startsWith('وَالْحَمْدُ لِلهِ')) {
                     const rest = part.substring('وَالْحَمْدُ لِلهِ'.length).trim();
                     return (
-                      <Text key={idx} style={styles.jawahirLine}>
+                      <Text key={idx} style={[styles.jawahirLine, isDarkMode && styles.jawahirLineDark]}>
                         <Text style={styles.jawahirKeyword}>وَالْحَمْدُ لِلهِ </Text>
                         {rest}
                       </Text>
                     );
                   }
-                  return <Text key={idx} style={styles.jawahirLine}>{part}</Text>;
+                  return <Text key={idx} style={[styles.jawahirLine, isDarkMode && styles.jawahirLineDark]}>{part}</Text>;
                 })}
               </ScrollView>
               <LinearGradient
-                colors={['transparent', '#F5F0E8']}
+                colors={['transparent', isDarkMode ? '#081511' : '#F5F0E8']}
                 style={styles.jawahirFade}
                 pointerEvents="none"
               />
@@ -167,7 +169,7 @@ export default function DhikrPlayer({
               indicatorStyle="white"
               nestedScrollEnabled
             >
-              <Text style={[styles.dhikrText, { fontSize: dhikrFontSize, lineHeight: dhikrLineHeight }]}>{dhikrText}</Text>
+              <Text style={[styles.dhikrText, isDarkMode && styles.dhikrTextDark, { fontSize: dhikrFontSize, lineHeight: dhikrLineHeight }]}>{dhikrText}</Text>
             </ScrollView>
           </View>
         )}
@@ -175,12 +177,12 @@ export default function DhikrPlayer({
 
       {/* Green Info Card (Jawahir only) */}
       {isJawahir ? (
-        <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
+          <Text style={[styles.infoText, isDarkMode && styles.infoTextDark]}>
             يمكنك إدخال : لا إله إلا الله ، الله أكبر،... على نفس الصيغة
           </Text>
           <Pressable onPress={() => setShowInfo(true)} hitSlop={8}>
-            <MaterialIcons name="info-outline" size={18} color="#065F46" />
+            <MaterialIcons name="info-outline" size={18} color={isDarkMode ? '#7FD4AE' : '#065F46'} />
           </Pressable>
         </View>
       ) : null}
@@ -190,9 +192,9 @@ export default function DhikrPlayer({
         <Pressable style={styles.infoOverlay} onPress={() => setShowInfo(false)}>
           <View />
         </Pressable>
-        <View style={styles.infoModal}>
-          <Text style={styles.infoModalTitle}>أمثلة الإدخال</Text>
-          <Text style={styles.infoModalText}>
+        <View style={[styles.infoModal, isDarkMode && styles.infoModalDark]}>
+          <Text style={[styles.infoModalTitle, isDarkMode && styles.infoModalTitleDark]}>أمثلة الإدخال</Text>
+          <Text style={[styles.infoModalText, isDarkMode && styles.infoModalTextDark]}>
             يمكنك إدخال أذكار مثل:{'\n\n'}
             • أستغفر الله وأتوب إليه عدد ما خلق{'\n'}
             • لا حول ولا قوة إلا بالله عدد ما خلق{'\n'}
@@ -215,7 +217,7 @@ export default function DhikrPlayer({
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={radius}
-                stroke="rgba(0,0,0,0.06)"
+                stroke={isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)'}
                 strokeWidth={STROKE_WIDTH}
                 fill="none"
               />
@@ -264,7 +266,7 @@ export default function DhikrPlayer({
                 </Text>
               </View>
             ) : subMessage ? (
-              <Text style={styles.subMessageText}>{subMessage}</Text>
+              <Text style={[styles.subMessageText, isDarkMode && styles.subMessageTextDark]}>{subMessage}</Text>
             ) : null}
           </>
         ) : null}
@@ -275,6 +277,7 @@ export default function DhikrPlayer({
         onPress={onShowDalil}
         style={({ pressed }) => [
           styles.dalilBtn,
+          isDarkMode && styles.dalilBtnDark,
           pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
         ]}
       >
@@ -296,6 +299,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 4,
     backgroundColor: '#F5F0E8',
+  },
+  rootDark: {
+    backgroundColor: '#081511',
   },
   textArea: {
     flex: 1,
@@ -384,6 +390,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 42,
   },
+  dhikrTextDark: {
+    color: '#E8F1EC',
+  },
   jawahirCard: {
     flex: 1,
     backgroundColor: 'rgba(255,248,231,0.55)',
@@ -391,6 +400,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,175,55,0.2)',
     borderRadius: 16,
     padding: 12,
+  },
+  jawahirCardDark: {
+    backgroundColor: '#0F241C',
+    borderColor: 'rgba(212,175,55,0.25)',
   },
   jawahirScrollWrap: {
     flex: 1,
@@ -428,6 +441,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 24,
   },
+  jawahirLineDark: {
+    color: '#E8F1EC',
+  },
   jawahirKeyword: {
     color: '#059669',
     fontWeight: '900',
@@ -449,6 +465,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     gap: 8,
   },
+  infoCardDark: {
+    backgroundColor: 'rgba(5,150,105,0.15)',
+    borderColor: 'rgba(5,150,105,0.4)',
+  },
   infoText: {
     flex: 1,
     fontSize: 12,
@@ -457,6 +477,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
     lineHeight: 18,
+  },
+  infoTextDark: {
+    color: '#7FD4AE',
   },
   infoOverlay: {
     flex: 1,
@@ -476,6 +499,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  infoModalDark: {
+    backgroundColor: '#0F241C',
+  },
   infoModalTitle: {
     fontSize: 16,
     fontWeight: '800',
@@ -483,6 +509,9 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
     marginBottom: 12,
+  },
+  infoModalTitleDark: {
+    color: '#7FD4AE',
   },
   infoModalText: {
     fontSize: 13,
@@ -492,6 +521,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 22,
     marginBottom: 16,
+  },
+  infoModalTextDark: {
+    color: '#C9D9D0',
   },
   infoModalBtn: {
     alignSelf: 'center',
@@ -575,6 +607,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'center',
   },
+  subMessageTextDark: {
+    color: 'rgba(255,255,255,0.55)',
+  },
   dalilBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -588,6 +623,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF8E7',
     marginHorizontal: 20,
     marginBottom: 16,
+  },
+  dalilBtnDark: {
+    backgroundColor: 'rgba(212,175,55,0.08)',
   },
   dalilBtnText: {
     fontSize: 15,

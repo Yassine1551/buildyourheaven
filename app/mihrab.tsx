@@ -66,7 +66,7 @@ export default function MihrabScreen() {
 
   const [showDaleel, setShowDaleel] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     loadTapSound();
@@ -115,49 +115,49 @@ export default function MihrabScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar hidden={isFullscreen} translucent backgroundColor="transparent" />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F5F0E8' }]} />
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? '#081511' : '#F5F0E8' }]} />
 
-      <SafeAreaView edges={isFullscreen ? [] : ['top', 'bottom']} style={{ flex: 1 }}>
+      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         {/* Header */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
-            <MaterialIcons name="close" size={24} color="#333" />
+        <Animated.View entering={FadeIn.duration(400)} style={[styles.header, isDarkMode && styles.headerDark]}>
+          <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeBtn, isDarkMode && styles.closeBtnDark, pressed && { opacity: 0.5 }]}>
+            <MaterialIcons name="close" size={24} color={isDarkMode ? '#D6E4DF' : '#333'} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: item.color }]} numberOfLines={1}>{item.title.replace('\n', ' ')}</Text>
           <View style={styles.headerIcons}>
-            {/* Fullscreen toggle */}
+            {/* Night mode toggle */}
             <Pressable
-              onPress={() => setIsFullscreen(prev => !prev)}
-              style={({ pressed }) => [styles.headerIconBtn, pressed && { opacity: 0.5 }]}
+              onPress={() => setIsDarkMode(prev => !prev)}
+              style={({ pressed }) => [styles.headerIconBtn, isDarkMode && styles.headerIconBtnDark, pressed && { opacity: 0.5 }]}
             >
-              <MaterialIcons name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'} size={20} color={isFullscreen ? '#10B981' : '#666'} />
+              <MaterialIcons name={isDarkMode ? 'light-mode' : 'dark-mode'} size={20} color={isDarkMode ? '#10B981' : '#666'} />
             </Pressable>
             {/* Reset with single tap */}
             <Pressable
               onPress={() => setShowResetModal(true)}
-              style={({ pressed }) => [styles.headerIconBtn, pressed && { backgroundColor: 'rgba(212,175,55,0.12)' }]}
+              style={({ pressed }) => [styles.headerIconBtn, isDarkMode && styles.headerIconBtnDark, pressed && { backgroundColor: 'rgba(212,175,55,0.12)' }]}
             >
-              <MaterialIcons name="refresh" size={20} color="#666" />
+              <MaterialIcons name="refresh" size={20} color={isDarkMode ? '#D6E4DF' : '#666'} />
             </Pressable>
             <Pressable
               onPress={toggleSound}
-              style={({ pressed }) => [styles.headerIconBtn, pressed && { opacity: 0.5 }]}
+              style={({ pressed }) => [styles.headerIconBtn, isDarkMode && styles.headerIconBtnDark, pressed && { opacity: 0.5 }]}
             >
               <MaterialIcons
                 name={soundEnabled ? 'volume-up' : 'volume-off'}
                 size={20}
-                color={soundEnabled ? '#666' : '#EF4444'}
+                color={soundEnabled ? (isDarkMode ? '#D6E4DF' : '#666') : '#EF4444'}
               />
             </Pressable>
             <Pressable
               onPress={toggleVibration}
-              style={({ pressed }) => [styles.headerIconBtn, pressed && { opacity: 0.5 }]}
+              style={({ pressed }) => [styles.headerIconBtn, isDarkMode && styles.headerIconBtnDark, pressed && { opacity: 0.5 }]}
             >
               <MaterialIcons
                 name={vibrationEnabled ? 'vibration' : 'smartphone'}
                 size={20}
-                color={vibrationEnabled ? '#666' : '#EF4444'}
+                color={vibrationEnabled ? (isDarkMode ? '#D6E4DF' : '#666') : '#EF4444'}
               />
             </Pressable>
           </View>
@@ -177,6 +177,7 @@ export default function MihrabScreen() {
           useWesternNumerals={useWesternNumerals}
           subMessage={isComplete ? 'أحسنت! أتممت الورد - واصل الذكر' : undefined}
           buttonScale={buttonScale}
+          isDarkMode={isDarkMode}
         />
       </SafeAreaView>
 
@@ -186,24 +187,24 @@ export default function MihrabScreen() {
           <View />
         </Pressable>
         <View style={styles.daleelModalWrapper}>
-          <View style={styles.daleelModal}>
-            <Pressable onPress={() => setShowDaleel(false)} style={({ pressed }) => [styles.daleelCloseBtn, pressed && { opacity: 0.5 }]}>
-              <MaterialIcons name="close" size={22} color="#999" />
+          <View style={[styles.daleelModal, isDarkMode && styles.daleelModalDark]}>
+            <Pressable onPress={() => setShowDaleel(false)} style={({ pressed }) => [styles.daleelCloseBtn, isDarkMode && styles.daleelCloseBtnDark, pressed && { opacity: 0.5 }]}>
+              <MaterialIcons name="close" size={22} color={isDarkMode ? '#C9D9D0' : '#999'} />
             </Pressable>
             <View style={styles.daleelIconCircle}>
               <MaterialIcons name="menu-book" size={28} color={theme.gold} />
             </View>
-            <Text style={styles.daleelModalTitle}>الدليل الشرعي</Text>
-            <Text style={styles.daleelDhikrName}>{item.title.replace('\n', ' ')}</Text>
+            <Text style={[styles.daleelModalTitle, isDarkMode && styles.daleelModalTitleDark]}>الدليل الشرعي</Text>
+            <Text style={[styles.daleelDhikrName, isDarkMode && styles.daleelDhikrNameDark]}>{item.title.replace('\n', ' ')}</Text>
             <View style={styles.daleelHadithBadge}>
               <Text style={styles.daleelHadithBadgeText}>الحديث</Text>
             </View>
-            <View style={styles.daleelContentCard}>
-              <Text style={styles.daleelContentText}>{item.daleel}</Text>
+            <View style={[styles.daleelContentCard, isDarkMode && styles.daleelContentCardDark]}>
+              <Text style={[styles.daleelContentText, isDarkMode && styles.daleelContentTextDark]}>{item.daleel}</Text>
             </View>
             <View style={styles.daleelSourceRow}>
               <Text style={styles.daleelSourceLabel}>الراوي / المصدر:</Text>
-              <Text style={styles.daleelSourceValue}>{item.source}</Text>
+              <Text style={[styles.daleelSourceValue, isDarkMode && styles.daleelSourceValueDark]}>{item.source}</Text>
             </View>
           </View>
         </View>
@@ -212,7 +213,7 @@ export default function MihrabScreen() {
       {/* Spiritual Reset Modal */}
       <Modal visible={showResetModal} transparent animationType="fade">
         <View style={styles.resetOverlay}>
-          <View style={styles.resetModal}>
+          <View style={[styles.resetModal, isDarkMode && styles.resetModalDark]}>
             {/* Gold ornamental top */}
             <View style={styles.resetOrnament}>
               <LinearGradient
@@ -224,10 +225,10 @@ export default function MihrabScreen() {
               </View>
             </View>
 
-            <Text style={styles.resetTitle}>تنبيه اليقين</Text>
+            <Text style={[styles.resetTitle, isDarkMode && styles.resetTitleDark]}>تنبيه اليقين</Text>
 
-            <View style={styles.resetMessageCard}>
-              <Text style={styles.resetMessage}>
+            <View style={[styles.resetMessageCard, isDarkMode && styles.resetMessageCardDark]}>
+              <Text style={[styles.resetMessage, isDarkMode && styles.resetMessageDark]}>
                 {"عزيزي الباني لجنتك.. هذا التصفير يمس أرقام الشاشة الفانية فحسب؛ أما ما خطته أقلام الملائكة فثابت في صحائفك عند الكريم المنان، لا يمحوه ضغط زر، ولا ينساه ربٌ رحيم."}
               </Text>
             </View>
@@ -273,6 +274,10 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.06)',
     backgroundColor: 'rgba(245,240,232,0.95)',
   },
+  headerDark: {
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(8,21,17,0.95)',
+  },
   headerIcons: {
     flexDirection: 'row',
     gap: 6,
@@ -284,6 +289,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerIconBtnDark: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   headerTitle: {
     fontSize: 18,
@@ -298,6 +306,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closeBtnDark: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   fadlCard: {
     marginHorizontal: 16,
@@ -482,6 +493,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
   },
+  daleelModalDark: {
+    backgroundColor: '#0F241C',
+  },
   daleelCloseBtn: {
     position: 'absolute',
     top: 14,
@@ -493,6 +507,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  daleelCloseBtnDark: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   daleelIconCircle: {
     width: 56,
@@ -510,12 +527,18 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     marginBottom: 4,
   },
+  daleelModalTitleDark: {
+    color: '#E8F1EC',
+  },
   daleelDhikrName: {
     fontSize: 14,
     fontWeight: '700',
     color: '#B8941E',
     writingDirection: 'rtl',
     marginBottom: 14,
+  },
+  daleelDhikrNameDark: {
+    color: '#D9BC6A',
   },
   daleelHadithBadge: {
     alignSelf: 'flex-end',
@@ -539,6 +562,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(212,175,55,0.15)',
   },
+  daleelContentCardDark: {
+    backgroundColor: '#132A21',
+    borderColor: 'rgba(212,175,55,0.2)',
+  },
   daleelContentText: {
     fontSize: 15,
     fontWeight: '600',
@@ -546,6 +573,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 26,
+  },
+  daleelContentTextDark: {
+    color: '#C9D9D0',
   },
   daleelSourceRow: {
     alignItems: 'flex-end',
@@ -562,6 +592,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#064E3B',
     writingDirection: 'rtl',
+  },
+  daleelSourceValueDark: {
+    color: '#7FD4AE',
   },
   // Spiritual Reset Modal
   resetOverlay: {
@@ -587,6 +620,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 24,
   },
+  resetModalDark: {
+    backgroundColor: '#0F241C',
+  },
   resetOrnament: {
     position: 'absolute',
     top: -32,
@@ -611,6 +647,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
+  resetTitleDark: {
+    color: '#E8F1EC',
+  },
   resetMessageCard: {
     width: '100%',
     backgroundColor: '#FFFEF5',
@@ -620,6 +659,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(212,175,55,0.15)',
   },
+  resetMessageCardDark: {
+    backgroundColor: '#132A21',
+  },
   resetMessage: {
     fontSize: 15,
     fontWeight: '600',
@@ -627,6 +669,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 28,
+  },
+  resetMessageDark: {
+    color: '#C9D9D0',
   },
   resetConfirmBtn: {
     width: '100%',
