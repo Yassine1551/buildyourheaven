@@ -68,7 +68,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   }, [item.id]);
 
   return (
-    <Modal visible={visible} animationType="fade" transparent statusBarTranslucent>
+    <Modal visible={visible} animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <LinearGradient
           colors={['#021A13', '#042F2E', '#0C1E2E']}
