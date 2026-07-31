@@ -57,6 +57,13 @@ const TIME_RANGES: Record<AlertType, { label: string }> = {
   wakeup: { label: 'أذكار الاستيقاظ' },
 };
 
+const DEFAULT_TIMES: Record<AlertType, { hour: number; minute: number }> = {
+  morning: { hour: 7, minute: 0 },
+  evening: { hour: 17, minute: 0 },
+  sleep: { hour: 22, minute: 0 },
+  wakeup: { hour: 6, minute: 0 },
+};
+
 function formatTimeDisplay(hour: number, minute: number): string {
   const period = hour >= 12 ? 'مساءً' : 'صباحاً';
   const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
@@ -227,6 +234,15 @@ export default function NotificationsScreen() {
       setWakeupTime({ hour, minute });
     }
     setShowTimePicker(false);
+  };
+
+  const resetTimeToDefault = () => {
+    const def = DEFAULT_TIMES[pickerType];
+    setTempHour(def.hour);
+    setTempMinute(def.minute);
+    setTempHourStr(String(def.hour));
+    setTempMinuteStr(String(def.minute).padStart(2, '0'));
+    showToast('أُعيد الوقت إلى الافتراضي');
   };
 
   const handleNotifPress = (notif: NotifType) => {
@@ -458,6 +474,12 @@ export default function NotificationsScreen() {
                 <MaterialIcons name="close" size={20} color="#999" />
               </Pressable>
               <Text style={styles.pickerTitle}>اختر الوقت</Text>
+              <Pressable
+                onPress={resetTimeToDefault}
+                style={({ pressed }) => [styles.pickerResetBtn, pressed && { opacity: 0.5 }]}
+              >
+                <MaterialIcons name="restore" size={20} color={theme.gold} />
+              </Pressable>
             </View>
 
             <Text style={styles.pickerRangeHint}>
@@ -512,7 +534,7 @@ export default function NotificationsScreen() {
               <View style={styles.timeSelectorCol}>
                 <Pressable
                   onPress={() => {
-                    const next = (tempMinute + 15) % 60;
+                    const next = (tempMinute + 5) % 60;
                     setTempMinute(next);
                     setTempMinuteStr(String(next).padStart(2, '0'));
                   }}
@@ -537,7 +559,7 @@ export default function NotificationsScreen() {
                 </View>
                 <Pressable
                   onPress={() => {
-                    const next = (tempMinute - 15 + 60) % 60;
+                    const next = (tempMinute - 5 + 60) % 60;
                     setTempMinute(next);
                     setTempMinuteStr(String(next).padStart(2, '0'));
                   }}
@@ -815,6 +837,14 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerResetBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(212,175,55,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
