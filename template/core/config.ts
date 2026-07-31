@@ -3,7 +3,7 @@ import { MihrabConfig } from './types';
 
 class ConfigManager {
   private static instance: ConfigManager;
-  private config: OnSpaceConfig | null = null;
+  private config: TemplateConfig | null = null;
 
   private constructor() {}
 
@@ -14,7 +14,7 @@ class ConfigManager {
     return ConfigManager.instance;
   }
 
-  public initialize(config: OnSpaceConfig) {
+  public initialize(config: TemplateConfig) {
     if (this.config) {
       console.warn('[Template:Config] Configuration already set, updating...');
     }
@@ -22,14 +22,14 @@ class ConfigManager {
     this.config = { ...config };
   }
 
-  public getConfig(): OnSpaceConfig {
+  public getConfig(): TemplateConfig {
     if (!this.config) {
       this.config = this.createDefaultConfig();
     }
     return { ...this.config };
   }
 
-  private createDefaultConfig(): OnSpaceConfig {
+  private createDefaultConfig(): TemplateConfig {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -72,7 +72,7 @@ class ConfigManager {
     return this.getConfig().supabase;
   }
 
-  public updateConfig(updates: Partial<OnSpaceConfig>) {
+  public updateConfig(updates: Partial<TemplateConfig>) {
     const config = this.getConfig();
     this.config = { ...config, ...updates };
   }
@@ -91,7 +91,7 @@ interface CreateConfigOptions {
   };
 }
 
-export const createConfig = (options: CreateConfigOptions = {}): OnSpaceConfig => {
+export const createConfig = (options: CreateConfigOptions = {}): TemplateConfig => {
   let authConfig;
   if (options.auth === false) {
     authConfig = false;

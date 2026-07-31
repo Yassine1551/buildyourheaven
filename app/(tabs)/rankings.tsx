@@ -34,10 +34,11 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   hasPrev: boolean;
 }) {
   const [showStrategy, setShowStrategy] = useState(false);
-  const [fontSize, setFontSize] = useState(18);
+  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 16 : item.id === '10' ? 16.5 : item.id === '13' ? 16 : item.id === '14' ? 17 : 18);
   const [readingPhase, setReadingPhase] = useState<'natharan' | 'ghayban' | 'complete'>('natharan');
   const [readingCount, setReadingCount] = useState(0);
   const nextUnlocked = readingPhase === 'complete' || isMemorized;
+  const titleFontSize = item.id === "3" ? 12 : item.id === "10" ? 15 : item.id === "11" ? 16 : item.title.length > 32 ? 14 : 18;
 
   const handleReadingPress = useCallback(() => {
     if (readingPhase === 'natharan' && readingCount < 10) {
@@ -65,6 +66,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   useEffect(() => {
     setReadingPhase('natharan');
     setReadingCount(0);
+    setFontSize(item.id === '9' ? 16 : item.id === '10' ? 16.5 : item.id === '13' ? 16 : item.id === '14' ? 17 : 18);
   }, [item.id]);
 
   return (
@@ -82,7 +84,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
               <MaterialIcons name="close" size={24} color="rgba(255,255,255,0.6)" />
             </Pressable>
             <View style={styles.modalTitleRow}>
-              <Text style={styles.modalTitle}>{item.title}</Text>
+              <Text style={[styles.modalTitle, { fontSize: titleFontSize }]} numberOfLines={1}>{item.title}</Text>
             </View>
             <Text style={styles.modalOrder}>{item.order}</Text>
           </View>
@@ -130,15 +132,12 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
 
           {/* Content */}
           <View style={{ flex: 1, overflow: 'hidden' }}>
-            <ScrollView
-              contentContainerStyle={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Verse text - fixed frame */}
+            <View style={styles.modalContent}>
+              {/* Verse text - fixed frame, scroll inside */}
               <View style={styles.modalVersesWrap}>
                 <ScrollView
-                  style={{ maxHeight: 260 }}
-                  contentContainerStyle={{ alignItems: 'center', paddingVertical: 4 }}
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ alignItems: 'center', paddingVertical: 0 }}
                   showsVerticalScrollIndicator={false}
                   nestedScrollEnabled
                 >
@@ -146,13 +145,13 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
                 </ScrollView>
               </View>
 
-              {/* Virtue */}
+              {/* Virtue - fixed */}
               <View style={styles.modalVirtueWrap}>
                 <View style={styles.modalVirtueDivider} />
                 <Text style={styles.modalVirtueLabel}>فضل الآية</Text>
                 <Text style={styles.modalVirtueText}>{item.virtue}</Text>
               </View>
-            </ScrollView>
+            </View>
           </View>
 
           {/* Bottom controls */}
@@ -228,12 +227,12 @@ function MemorizationCard({ item, isMemorized, onPress }: {
           style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
         />
         <View style={styles.cardHeader}>
-          <Text style={styles.orderBadge}>{item.order}</Text>
+          <MaterialIcons name="chevron-left" size={20} color="rgba(255,255,255,0.2)" />
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{item.title}</Text>
             {isMemorized && <MaterialIcons name="check-circle" size={18} color="#4CAF50" style={{ marginLeft: 6 }} />}
           </View>
-          <MaterialIcons name="chevron-left" size={20} color="rgba(255,255,255,0.2)" />
+          <Text style={styles.orderBadge}>{item.order}</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -615,23 +614,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    marginHorizontal: 10,
     writingDirection: 'rtl',
   },
   modalOrder: {
-    fontSize: 13,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    fontSize: 14,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+    lineHeight: 40,
     overflow: 'hidden',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#FFF',
+    flex: 1,
     writingDirection: 'rtl',
+    textAlign: 'center',
   },
   strategyBtn: {
     width: 40,
@@ -702,13 +707,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContent: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
   modalVersesWrap: {
-    marginTop: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 12,
+    flex: 1,
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
     borderWidth: 1,

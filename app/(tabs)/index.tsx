@@ -136,6 +136,7 @@ export default function DashboardScreen() {
   const [editNameInput, setEditNameInput] = useState('');
   const [editShowGender, setEditShowGender] = useState<'male' | 'female'>('male');
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
 
@@ -342,14 +343,7 @@ export default function DashboardScreen() {
           });
         } catch (e) {}
       } else if (route === 'privacy') {
-        try {
-          const url = 'https://onspace.ai/privacy';
-          const supported = await Linking.canOpenURL(url);
-          if (supported) await Linking.openURL(url);
-          else showAlert('سياسة الخصوصية', 'سيتم نشر سياسة الخصوصية قريباً.');
-        } catch (e) {
-          showAlert('سياسة الخصوصية', 'سيتم نشر سياسة الخصوصية قريباً.');
-        }
+        setShowPrivacyModal(true);
       }
     }, 200);
   };
@@ -1406,6 +1400,34 @@ export default function DashboardScreen() {
             </View>
             <Pressable
               onPress={() => setShowAboutModal(false)}
+              style={({ pressed }) => [styles.targetConfirmBtn, pressed && { opacity: 0.8 }]}
+            >
+              <LinearGradient colors={['#064E3B', '#0D7A5F']} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+              <Text style={styles.targetConfirmText}>حسناً</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Privacy Modal */}
+      <Modal visible={showPrivacyModal} transparent animationType="fade">
+        <Pressable style={styles.settingsOverlay} onPress={() => setShowPrivacyModal(false)}>
+          <View />
+        </Pressable>
+        <View style={styles.targetModalWrapper}>
+          <View style={[styles.targetModalContent, { paddingTop: 24 }]}>
+            <View style={styles.aboutIconCircle}>
+              <MaterialIcons name="privacy-tip" size={28} color={theme.gold} />
+            </View>
+            <Text style={styles.aboutTitle}>سياسة الخصوصية</Text>
+            <Text style={styles.aboutSubtitle}>ابنِ جنتك</Text>
+            <View style={styles.aboutCard}>
+              <Text style={styles.aboutText}>
+                {"تطبيق ابنِ جنتك يحترم خصوصيتك ويحافظ عليها:\n\n- جميع بياناتك (الأذكار، الإحصائيات، تقدم الحفظ) تُحفظ محلياً على جهازك فقط.\n- لا نجمع أي بيانات شخصية ولا نشاركها مع أي طرف.\n- لا نستخدم إعلانات التتبع.\n- الإشعارات والتنبيهات محلية بالكامل على جهازك.\n- لا توجد مزامنة سحابية؛ فبياناتك ملكك وحدك."}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setShowPrivacyModal(false)}
               style={({ pressed }) => [styles.targetConfirmBtn, pressed && { opacity: 0.8 }]}
             >
               <LinearGradient colors={['#064E3B', '#0D7A5F']} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />

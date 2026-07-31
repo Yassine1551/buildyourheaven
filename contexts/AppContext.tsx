@@ -130,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [useWesternNumerals, setUseWesternNumerals] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [darkAuto, setDarkAuto] = useState(true);
   const [targetYears, setTargetYearsState] = useState(60);
   const [morningCounts, setMorningCounts] = useState<Record<string, number>>({});
   const [sleepCounts, setSleepCounts] = useState<Record<string, number>>({});
@@ -145,9 +146,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { loadData(); }, []);
 
+  // Auto dark mode: ON from 6 PM to 6 AM by default, unless manually toggled
+  useEffect(() => {
+    if (!darkAuto) return;
+    const applySchedule = () => {
+      const h = new Date().getHours();
+      setIsDarkMode(h >= 18 || h < 6);
+    };
+    applySchedule();
+    const id = setInterval(applySchedule, 60000);
+    return () => clearInterval(id);
+  }, [darkAuto]);
+
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, reviewState, gender, epithet, badges]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, reviewState, gender, epithet, badges]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -158,7 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal] = await Promise.all([
+      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal] = await Promise.all([
         AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
@@ -175,6 +188,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem('vibration_enabled'),
         AsyncStorage.getItem('use_western_numerals'),
         AsyncStorage.getItem('dark_mode'),
+        AsyncStorage.getItem('dark_auto'),
         AsyncStorage.getItem('target_years'),
         AsyncStorage.getItem('morning_counts'),
         AsyncStorage.getItem('sleep_counts'),
@@ -197,6 +211,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedVibration !== null) setVibrationEnabled(JSON.parse(savedVibration));
       if (savedNumerals !== null) setUseWesternNumerals(JSON.parse(savedNumerals));
       if (savedDarkMode !== null) setIsDarkMode(JSON.parse(savedDarkMode));
+      if (savedDarkAuto !== null) setDarkAuto(JSON.parse(savedDarkAuto));
+      else if (savedDarkMode !== null) setDarkAuto(false);
       if (savedTargetYears !== null) setTargetYearsState(JSON.parse(savedTargetYears));
       if (savedMorningCounts) setMorningCounts(JSON.parse(savedMorningCounts));
       if (savedSleepCounts) setSleepCounts(JSON.parse(savedSleepCounts));
@@ -231,6 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('vibration_enabled', JSON.stringify(vibrationEnabled)),
         AsyncStorage.setItem('use_western_numerals', JSON.stringify(useWesternNumerals)),
         AsyncStorage.setItem('dark_mode', JSON.stringify(isDarkMode)),
+        AsyncStorage.setItem('dark_auto', JSON.stringify(darkAuto)),
         AsyncStorage.setItem('target_years', JSON.stringify(targetYears)),
         AsyncStorage.setItem('morning_counts', JSON.stringify(morningCounts)),
         AsyncStorage.setItem('sleep_counts', JSON.stringify(sleepCounts)),
@@ -620,7 +637,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleSound = useCallback(() => { setSoundEnabled(prev => !prev); }, []);
   const toggleVibration = useCallback(() => { setVibrationEnabled(prev => !prev); }, []);
   const toggleNumeralSystem = useCallback(() => { setUseWesternNumerals(prev => !prev); }, []);
-  const toggleDarkMode = useCallback(() => { setIsDarkMode(prev => !prev); }, []);
+  const toggleDarkMode = useCallback(() => {
+    setDarkAuto(false);
+    setIsDarkMode(prev => !prev);
+  }, []);
   const toggleDevUnlock = useCallback(() => { setIsDevUnlocked(prev => !prev); }, []);
 
   const setTargetYears = useCallback((years: number) => {

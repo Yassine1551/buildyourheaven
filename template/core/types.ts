@@ -39,7 +39,7 @@ export interface MihrabConfig extends ModuleConfig {
 export interface SDKState {
   initialized: boolean;
   enabledModules: string[];
-  config: OnSpaceConfig;
+  config: TemplateConfig;
 }
 
 // Error type
