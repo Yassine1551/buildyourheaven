@@ -42,7 +42,7 @@ async function checkAndShowWakeup() {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '🌅 أذكار الاستيقاظ',
-        body: 'استيقظت؟ ابدأ يومك بذكر الله',
+        body: 'فاذكروني أذكركم - ابدأ يومك بذكر الله',
         sound: true,
       },
       trigger: null,

@@ -41,10 +41,10 @@ interface NotifType {
 }
 
 const initialNotifications: NotifType[] = [
-  { id: '1', title: 'أذكار الصباح', desc: 'حان وقت أذكار الصباح، لا تنسَ ذكر الله', time: '7:00 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
-  { id: '2', title: 'أذكار المساء', desc: 'حان وقت أذكار المساء، وقتها الآن', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
-  { id: '3', title: 'أذكار النوم', desc: 'حان وقت أذكار النوم، نم على ذكر الله', time: '10:00 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
-  { id: '4', title: 'أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله', time: '6:00 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
+  { id: '1', title: 'أذكار الصباح', desc: 'فاذكروني أذكركم - حان وقت أذكار الصباح', time: '7:00 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
+  { id: '2', title: 'أذكار المساء', desc: 'فاذكروني أذكركم - حان وقت أذكار المساء', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
+  { id: '3', title: 'أذكار النوم', desc: 'فاذكروني أذكركم - نم على ذكر الله', time: '10:00 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
+  { id: '4', title: 'أذكار الاستيقاظ', desc: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ', time: '6:00 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
 ];
 
 type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup';
@@ -119,7 +119,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌅 أذكار الصباح',
-            body: 'حان وقت أذكار الصباح، لا تنسَ ذكر الله. "من قالها حين يُصبح وحين يُمسي كان حقاً على الله أن يُرضيه يوم القيامة"',
+            body: 'فاذكروني أذكركم - حان وقت أذكار الصباح',
             sound: true,
           },
           trigger: {
@@ -134,7 +134,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌙 أذكار المساء',
-            body: 'حان وقت أذكار المساء. "مَن قال حين يُمسي: بسم الله الذي لا يضرُّ مع اسمه شيءٌ في الأرض ولا في السماء وهو السميع العليم"',
+            body: 'فاذكروني أذكركم - حان وقت أذكار المساء',
             sound: true,
           },
           trigger: {
@@ -149,7 +149,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌤️ أذكار الاستيقاظ',
-            body: 'حان وقت أذكار الاستيقاظ. استيقظت؟ ابدأ يومك بذكر الله.',
+            body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
             sound: true,
           },
           trigger: {
@@ -164,7 +164,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌜 أذكار النوم',
-            body: 'حان وقت أذكار النوم. "باسمك اللهم أموت وأحيا". نم على ذكر الله واستغفاره.',
+            body: 'فاذكروني أذكركم - نم على ذكر الله',
             sound: true,
           },
           trigger: {
