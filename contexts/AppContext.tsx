@@ -47,6 +47,8 @@ interface AppContextType extends AppState {
   toggleVibration: () => void;
   useWesternNumerals: boolean;
   toggleNumeralSystem: () => void;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
   targetYears: number;
   setTargetYears: (years: number) => void;
   resetAllData: () => void;
@@ -127,6 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [useWesternNumerals, setUseWesternNumerals] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [targetYears, setTargetYearsState] = useState(60);
   const [morningCounts, setMorningCounts] = useState<Record<string, number>>({});
   const [sleepCounts, setSleepCounts] = useState<Record<string, number>>({});
@@ -144,7 +147,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, reviewState, gender, epithet, badges]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, reviewState, gender, epithet, badges]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -155,7 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal] = await Promise.all([
+      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal] = await Promise.all([
         AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
@@ -171,6 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem('sound_enabled'),
         AsyncStorage.getItem('vibration_enabled'),
         AsyncStorage.getItem('use_western_numerals'),
+        AsyncStorage.getItem('dark_mode'),
         AsyncStorage.getItem('target_years'),
         AsyncStorage.getItem('morning_counts'),
         AsyncStorage.getItem('sleep_counts'),
@@ -192,6 +196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedSound !== null) setSoundEnabled(JSON.parse(savedSound));
       if (savedVibration !== null) setVibrationEnabled(JSON.parse(savedVibration));
       if (savedNumerals !== null) setUseWesternNumerals(JSON.parse(savedNumerals));
+      if (savedDarkMode !== null) setIsDarkMode(JSON.parse(savedDarkMode));
       if (savedTargetYears !== null) setTargetYearsState(JSON.parse(savedTargetYears));
       if (savedMorningCounts) setMorningCounts(JSON.parse(savedMorningCounts));
       if (savedSleepCounts) setSleepCounts(JSON.parse(savedSleepCounts));
@@ -225,6 +230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('sound_enabled', JSON.stringify(soundEnabled)),
         AsyncStorage.setItem('vibration_enabled', JSON.stringify(vibrationEnabled)),
         AsyncStorage.setItem('use_western_numerals', JSON.stringify(useWesternNumerals)),
+        AsyncStorage.setItem('dark_mode', JSON.stringify(isDarkMode)),
         AsyncStorage.setItem('target_years', JSON.stringify(targetYears)),
         AsyncStorage.setItem('morning_counts', JSON.stringify(morningCounts)),
         AsyncStorage.setItem('sleep_counts', JSON.stringify(sleepCounts)),
@@ -614,6 +620,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleSound = useCallback(() => { setSoundEnabled(prev => !prev); }, []);
   const toggleVibration = useCallback(() => { setVibrationEnabled(prev => !prev); }, []);
   const toggleNumeralSystem = useCallback(() => { setUseWesternNumerals(prev => !prev); }, []);
+  const toggleDarkMode = useCallback(() => { setIsDarkMode(prev => !prev); }, []);
   const toggleDevUnlock = useCallback(() => { setIsDevUnlocked(prev => !prev); }, []);
 
   const setTargetYears = useCallback((years: number) => {
@@ -673,6 +680,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSoundEnabled(true);
     setVibrationEnabled(true);
     setUseWesternNumerals(true);
+    setIsDarkMode(false);
     setTargetYearsState(60);
     setMorningCounts({});
     setSleepCounts({});
@@ -701,7 +709,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         incrementDhikr, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
         dismissWelcome, isCardUnlocked, getUnlockRequirement, clearCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,
-        toggleNumeralSystem, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
+        toggleNumeralSystem, isDarkMode, toggleDarkMode, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
         incrementMorningDhikr, completeMorningDhikr, incrementSleepDhikr, completeSleepDhikr,
         incrementEveningDhikr, completeEveningDhikr, incrementWakeupDhikr, completeWakeupDhikr,
         getTotalGlobalDhikr, isDevUnlocked, toggleDevUnlock,

@@ -8,6 +8,7 @@ import {
   Platform,
   Switch,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -48,22 +49,13 @@ const initialNotifications: NotifType[] = [
 
 type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup';
 
-// Time validation ranges
-const TIME_RANGES: Record<AlertType, { min: number; max: number; label: string }> = {
-  morning: { min: 4, max: 11, label: 'أذكار الصباح (4:00 - 11:59)' },
-  evening: { min: 12, max: 19, label: 'أذكار المساء (12:00 - 19:59)' },
-  sleep: { min: 20, max: 27, label: 'أذكار النوم (20:00 - 3:59)' },
-  wakeup: { min: 4, max: 11, label: 'أذكار الاستيقاظ (4:00 - 11:59)' },
+// Time labels
+const TIME_RANGES: Record<AlertType, { label: string }> = {
+  morning: { label: 'أذكار الصباح' },
+  evening: { label: 'أذكار المساء' },
+  sleep: { label: 'أذكار النوم' },
+  wakeup: { label: 'أذكار الاستيقاظ' },
 };
-
-function isTimeValid(hour: number, type: AlertType): boolean {
-  const range = TIME_RANGES[type];
-  if (type === 'sleep') {
-    // Sleep wraps around midnight: 20:00 - 03:59
-    return hour >= 20 || hour <= 3;
-  }
-  return hour >= range.min && hour <= range.max;
-}
 
 function formatTimeDisplay(hour: number, minute: number): string {
   const period = hour >= 12 ? 'مساءً' : 'صباحاً';
@@ -93,6 +85,8 @@ export default function NotificationsScreen() {
   const [pickerType, setPickerType] = useState<AlertType>('morning');
   const [tempHour, setTempHour] = useState(7);
   const [tempMinute, setTempMinute] = useState(0);
+  const [tempHourStr, setTempHourStr] = useState('7');
+  const [tempMinuteStr, setTempMinuteStr] = useState('0');
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
@@ -193,36 +187,40 @@ export default function NotificationsScreen() {
 
   const openTimePicker = (type: AlertType) => {
     setPickerType(type);
+    let h = 7, m = 0;
     if (type === 'morning') {
-      setTempHour(morningTime.hour);
-      setTempMinute(morningTime.minute);
+      h = morningTime.hour; m = morningTime.minute;
     } else if (type === 'evening') {
-      setTempHour(eveningTime.hour);
-      setTempMinute(eveningTime.minute);
+      h = eveningTime.hour; m = eveningTime.minute;
     } else if (type === 'sleep') {
-      setTempHour(sleepTime.hour);
-      setTempMinute(sleepTime.minute);
+      h = sleepTime.hour; m = sleepTime.minute;
     } else {
-      setTempHour(wakeupTime.hour);
-      setTempMinute(wakeupTime.minute);
+      h = wakeupTime.hour; m = wakeupTime.minute;
     }
+    setTempHour(h);
+    setTempMinute(m);
+    setTempHourStr(String(h));
+    setTempMinuteStr(String(m).padStart(2, '0'));
     setShowTimePicker(true);
   };
 
   const confirmTimePicker = () => {
-    if (!isTimeValid(tempHour, pickerType)) {
-      showToast('الرجاء اختيار وقت مناسب');
+    const hour = parseInt(tempHourStr, 10);
+    const minute = parseInt(tempMinuteStr, 10);
+
+    if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      showToast('الرجاء إدخال وقت صحيح');
       return;
     }
 
     if (pickerType === 'morning') {
-      setMorningTime({ hour: tempHour, minute: tempMinute });
+      setMorningTime({ hour, minute });
     } else if (pickerType === 'evening') {
-      setEveningTime({ hour: tempHour, minute: tempMinute });
+      setEveningTime({ hour, minute });
     } else if (pickerType === 'sleep') {
-      setSleepTime({ hour: tempHour, minute: tempMinute });
+      setSleepTime({ hour, minute });
     } else {
-      setWakeupTime({ hour: tempHour, minute: tempMinute });
+      setWakeupTime({ hour, minute });
     }
     setShowTimePicker(false);
   };
@@ -459,51 +457,91 @@ export default function NotificationsScreen() {
             </View>
 
             <Text style={styles.pickerRangeHint}>
-              {TIME_RANGES[pickerType].label}
+              اضبط الوقت لـ {TIME_RANGES[pickerType].label} — يمكنك كتابة الساعة والدقيقة بدقة
             </Text>
 
             {/* Custom Time Selector */}
             <View style={styles.timeSelector}>
-              {/* Minute */}
-              <View style={styles.timeSelectorCol}>
-                <Pressable
-                  onPress={() => setTempMinute(prev => (prev + 15) % 60)}
-                  style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
-                >
-                  <MaterialIcons name="keyboard-arrow-up" size={28} color={theme.gold} />
-                </Pressable>
-                <View style={styles.timeValueBox}>
-                  <Text style={styles.timeValueText}>{tempMinute.toString().padStart(2, '0')}</Text>
-                </View>
-                <Pressable
-                  onPress={() => setTempMinute(prev => (prev - 15 + 60) % 60)}
-                  style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
-                >
-                  <MaterialIcons name="keyboard-arrow-down" size={28} color={theme.gold} />
-                </Pressable>
-                <Text style={styles.timeColLabel}>دقيقة</Text>
-              </View>
-
-              <Text style={styles.timeSeparator}>:</Text>
-
               {/* Hour */}
               <View style={styles.timeSelectorCol}>
                 <Pressable
-                  onPress={() => setTempHour(prev => (prev + 1) % 24)}
+                  onPress={() => {
+                    const next = (tempHour + 1) % 24;
+                    setTempHour(next);
+                    setTempHourStr(String(next).padStart(2, '0'));
+                  }}
                   style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
                 >
                   <MaterialIcons name="keyboard-arrow-up" size={28} color={theme.gold} />
                 </Pressable>
                 <View style={styles.timeValueBox}>
-                  <Text style={styles.timeValueText}>{tempHour.toString().padStart(2, '0')}</Text>
+                  <TextInput
+                    style={styles.timeValueInput}
+                    value={tempHourStr}
+                    onChangeText={(t) => {
+                      setTempHourStr(t.replace(/[^0-9]/g, ''));
+                      const parsed = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                      if (!isNaN(parsed)) setTempHour(parsed);
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    textAlign="center"
+                    selectTextOnFocus
+                  />
                 </View>
                 <Pressable
-                  onPress={() => setTempHour(prev => (prev - 1 + 24) % 24)}
+                  onPress={() => {
+                    const next = (tempHour - 1 + 24) % 24;
+                    setTempHour(next);
+                    setTempHourStr(String(next).padStart(2, '0'));
+                  }}
                   style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
                 >
                   <MaterialIcons name="keyboard-arrow-down" size={28} color={theme.gold} />
                 </Pressable>
                 <Text style={styles.timeColLabel}>ساعة</Text>
+              </View>
+
+              <Text style={styles.timeSeparator}>:</Text>
+
+              {/* Minute */}
+              <View style={styles.timeSelectorCol}>
+                <Pressable
+                  onPress={() => {
+                    const next = (tempMinute + 15) % 60;
+                    setTempMinute(next);
+                    setTempMinuteStr(String(next).padStart(2, '0'));
+                  }}
+                  style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
+                >
+                  <MaterialIcons name="keyboard-arrow-up" size={28} color={theme.gold} />
+                </Pressable>
+                <View style={styles.timeValueBox}>
+                  <TextInput
+                    style={styles.timeValueInput}
+                    value={tempMinuteStr}
+                    onChangeText={(t) => {
+                      setTempMinuteStr(t.replace(/[^0-9]/g, ''));
+                      const parsed = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                      if (!isNaN(parsed)) setTempMinute(parsed);
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    textAlign="center"
+                    selectTextOnFocus
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    const next = (tempMinute - 15 + 60) % 60;
+                    setTempMinute(next);
+                    setTempMinuteStr(String(next).padStart(2, '0'));
+                  }}
+                  style={({ pressed }) => [styles.timeArrowBtn, pressed && { opacity: 0.5 }]}
+                >
+                  <MaterialIcons name="keyboard-arrow-down" size={28} color={theme.gold} />
+                </Pressable>
+                <Text style={styles.timeColLabel}>دقيقة</Text>
               </View>
             </View>
 
@@ -815,10 +853,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(212,175,55,0.2)',
   },
-  timeValueText: {
+  timeValueInput: {
+    width: '100%',
+    height: '100%',
     fontSize: 28,
     fontWeight: '800',
     color: '#064E3B',
+    textAlign: 'center',
+    padding: 0,
   },
   timeColLabel: {
     fontSize: 11,

@@ -116,6 +116,7 @@ export default function DashboardScreen() {
     lastCelebration, clearCelebration,
     soundEnabled, vibrationEnabled, toggleSound, toggleVibration,
     useWesternNumerals, toggleNumeralSystem,
+    isDarkMode, toggleDarkMode,
     targetYears, setTargetYears,
     resetAllData, resetVersesData, resetAdhkarData,
     isDevUnlocked, toggleDevUnlock,
@@ -1199,6 +1200,21 @@ export default function DashboardScreen() {
                   <Text style={styles.settingDesc}>{useWesternNumerals ? 'أرقام غربية (1, 2, 3)' : 'أرقام عربية (١، ٢، ٣)'}</Text>
                 </View>
                 <MaterialIcons name="translate" size={22} color={useWesternNumerals ? '#064E3B' : '#999'} />
+              </View>
+
+              {/* Night Mode Toggle */}
+              <View style={styles.settingRow}>
+                <Switch
+                  value={isDarkMode}
+                  onValueChange={toggleDarkMode}
+                  trackColor={{ false: '#DDD', true: '#064E3B' }}
+                  thumbColor={isDarkMode ? '#D4AF37' : '#999'}
+                />
+                <View style={styles.settingTextCol}>
+                  <Text style={styles.settingLabel}>الوضع الليلي</Text>
+                  <Text style={styles.settingDesc}>ثيم داكن مريح للعين ليلاً</Text>
+                </View>
+                <MaterialIcons name={isDarkMode ? 'dark-mode' : 'light-mode'} size={22} color={isDarkMode ? '#064E3B' : '#999'} />
               </View>
 
               <View style={styles.settingsSep} />

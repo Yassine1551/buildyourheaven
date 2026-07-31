@@ -36,7 +36,7 @@ const STROKE_WIDTH = 8;
 export default function MihrabScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { incrementDhikr, soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals } = useApp();
+  const { incrementDhikr, soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals, isDarkMode, toggleDarkMode } = useApp();
 
   const item = useMemo(() => dhikrItems.find(d => d.id === id), [id]);
   if (!item) return null;
@@ -66,7 +66,6 @@ export default function MihrabScreen() {
 
   const [showDaleel, setShowDaleel] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     loadTapSound();
@@ -128,7 +127,7 @@ export default function MihrabScreen() {
           <View style={styles.headerIcons}>
             {/* Night mode toggle */}
             <Pressable
-              onPress={() => setIsDarkMode(prev => !prev)}
+              onPress={toggleDarkMode}
               style={({ pressed }) => [styles.headerIconBtn, isDarkMode && styles.headerIconBtnDark, pressed && { opacity: 0.5 }]}
             >
               <MaterialIcons name={isDarkMode ? 'light-mode' : 'dark-mode'} size={20} color={isDarkMode ? '#10B981' : '#666'} />
