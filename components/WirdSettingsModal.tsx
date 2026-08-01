@@ -28,6 +28,7 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
   const [showAdd, setShowAdd] = useState(false);
   const [newText, setNewText] = useState('');
   const [newTarget, setNewTarget] = useState('100');
+  const [draftTargets, setDraftTargets] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (visible) {
@@ -35,18 +36,36 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
       setShowAdd(false);
       setNewText('');
       setNewTarget('100');
+      setDraftTargets({});
     }
   }, [visible, wirdConfig]);
+
+  const commitTarget = (id: string) => {
+    const draft = (draftTargets[id] || '').replace(/[^0-9]/g, '');
+    const parsed = parseInt(draft, 10);
+    const target = isNaN(parsed) || parsed < 1 ? 1 : Math.min(5000, parsed);
+    updateItem(id, { target });
+    setDraftTargets(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
 
   const updateItem = (id: string, patch: Partial<WirdDhikrItem>) => {
     setLocalItems(prev => prev.map(i => (i.id === id ? { ...i, ...patch } : i)));
   };
 
   const adjustTarget = (id: string, delta: number) => {
+    setDraftTargets(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     setLocalItems(prev =>
       prev.map(i => {
         if (i.id !== id) return i;
-        const next = Math.max(1, Math.min(1000, (i.target || 100) + delta));
+        const next = Math.max(1, Math.min(5000, (i.target || 100) + delta));
         return { ...i, target: next };
       })
     );
@@ -151,11 +170,16 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
                     <View style={styles.stepValueBox}>
                       <TextInput
                         style={styles.stepValueInput}
-                        value={String(item.target)}
+                        value={draftTargets[item.id] ?? String(item.target)}
                         onChangeText={t => {
-                          const parsed = parseInt(t.replace(/[^0-9]/g, ''), 10);
-                          if (!isNaN(parsed)) updateItem(item.id, { target: Math.max(1, Math.min(1000, parsed)) });
+                          const sanitized = t.replace(/[^0-9]/g, '');
+                          setDraftTargets(prev => ({ ...prev, [item.id]: sanitized }));
+                          const parsed = parseInt(sanitized, 10);
+                          if (!isNaN(parsed) && parsed >= 1 && parsed <= 5000) {
+                            updateItem(item.id, { target: parsed });
+                          }
                         }}
+                        onBlur={() => commitTarget(item.id)}
                         keyboardType="number-pad"
                         maxLength={4}
                         textAlign="center"
