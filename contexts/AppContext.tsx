@@ -110,7 +110,6 @@ function computeIsUnlocked(
     case 'thuluth-quran': return (counts['salat-nabi'] || 0) >= 200;
     case 'kanz': return (counts['thuluth-quran'] || 0) >= 100;
     case 'dhikr_qasr': return (counts['kanz'] || 0) >= 200;
-    case 'milul-mizan': return (counts['dhikr_qasr'] || 0) >= 100;
     case 'sadaqat-dhikr': return (counts['dhikr_qasr'] || 0) >= 100;
     case 'tahlil': return (counts['sadaqat-dhikr'] || 0) >= 300;
     case 'jawamie': return (counts['tahlil'] || 0) >= 100;
