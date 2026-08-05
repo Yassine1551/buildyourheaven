@@ -35,6 +35,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as FileSystem from 'expo-file-system';
 import { useAlert } from '@/template';
 import { useApp } from '../../contexts/AppContext';
+import { getAdhkarSlotAt } from '../../services/adhkarNotifications';
 import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, formatCompactNumber, formatExtraLife } from '../../services/mockData';
 import { DHIKR_BENEFITS_POOL } from '../../constants/benefits';
 import { CARD_BADGE_DEFINITIONS, TIER_INFO } from '../../constants/badges';
@@ -97,12 +98,8 @@ const FEMALE_NAMES = [
 const RESET_HOLD_DURATION = 3000;
 
 function getAdhkarTimeSlot(): 'morning' | 'evening' | 'sleep' | 'wakeup' | null {
-  const hour = new Date().getHours();
-  if (hour >= 1 && hour <= 4) return 'wakeup';
-  if (hour >= 5 && hour <= 13) return 'morning';
-  if (hour >= 14 && hour <= 20) return 'evening';
-  if (hour >= 21 || hour === 0) return 'sleep';
-  return null;
+  const now = new Date();
+  return getAdhkarSlotAt(now.getHours(), now.getMinutes());
 }
 
 export default function DashboardScreen() {
@@ -114,7 +111,7 @@ export default function DashboardScreen() {
     dhikrCounts, level, istiqama, rankTitle, userName,
     showWelcome, loaded, setUserName, dismissWelcome, isCardUnlocked,
     getUnlockRequirement,
-    lastCelebration, clearCelebration,
+    celebrationQueue, clearFirstCelebration,
     soundEnabled, vibrationEnabled, toggleSound, toggleVibration,
     useWesternNumerals, toggleNumeralSystem,
     isDarkMode, toggleDarkMode,
@@ -180,55 +177,63 @@ export default function DashboardScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    if (lastCelebration) {
-      // Tiered Celebration Handler
-      if (lastCelebration.startsWith('badge_')) {
-        const badgeId = lastCelebration.substring('badge_'.length);
-        const parts = badgeId.split('_');
-        const tier = parts.pop() as string;
-        const cardId = parts.join('_');
-        const def = CARD_BADGE_DEFINITIONS.find(d => d.cardId === cardId);
-        const level = def?.levels.find(l => l.tier === tier);
-        const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO];
-        if (level && tierInfo) {
-          router.push({
-            pathname: '/congratulations',
-            params: { title: level.title, type: 'badge', badgeTier: tierInfo.label, rankColor: level.color },
-          });
-        }
-        clearCelebration();
-      } else if (lastCelebration.startsWith('unlock_')) {
-        const cardId = lastCelebration.substring('unlock_'.length);
-        const item = dhikrItems.find(d => d.id === cardId);
-        if (item) {
-          router.push({
-            pathname: '/congratulations',
-            params: { title: item.title.replace('\n', ' '), type: 'unlock' },
-          });
-        }
-        clearCelebration();
-      } else if (lastCelebration.startsWith('milestone_')) {
-        const m = lastCelebration.substring('milestone_'.length);
-        const titles: Record<string, string> = {
-          '100': '100 ذكر',
-          '500': '500 ذكر',
-          '1000': '1000 ذكر',
-        };
+  const handleCelebrationEvent = useCallback((event: string) => {
+    // Tiered Celebration Handler
+    if (event.startsWith('badge_')) {
+      const badgeId = event.substring('badge_'.length);
+      const parts = badgeId.split('_');
+      const tier = parts.pop() as string;
+      const cardId = parts.join('_');
+      const def = CARD_BADGE_DEFINITIONS.find(d => d.cardId === cardId);
+      const level = def?.levels.find(l => l.tier === tier);
+      const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO];
+      if (level && tierInfo) {
         router.push({
           pathname: '/congratulations',
-          params: { title: titles[m] || `${m} ذكر`, type: 'milestone', milestone: m },
+          params: { title: level.title, type: 'badge', badgeTier: tierInfo.label, rankColor: level.color },
         });
-        clearCelebration();
-      } else {
-        const item = dhikrItems.find(d => d.id === lastCelebration);
-        if (item) {
-          router.push({ pathname: '/congratulations', params: { title: item.title.replace('\n', ' ') } });
-        }
-        clearCelebration();
+      }
+    } else if (event.startsWith('unlock_')) {
+      const cardId = event.substring('unlock_'.length);
+      const item = dhikrItems.find(d => d.id === cardId);
+      if (item) {
+        router.push({
+          pathname: '/congratulations',
+          params: { title: item.title.replace('\n', ' '), type: 'unlock' },
+        });
+      }
+    } else if (event.startsWith('milestone_')) {
+      const m = event.substring('milestone_'.length);
+      const titles: Record<string, string> = {
+        '100': '100 ذكر',
+        '500': '500 ذكر',
+        '1000': '1000 ذكر',
+      };
+      router.push({
+        pathname: '/congratulations',
+        params: { title: titles[m] || `${m} ذكر`, type: 'milestone', milestone: m },
+      });
+    } else {
+      const item = dhikrItems.find(d => d.id === event);
+      if (item) {
+        router.push({ pathname: '/congratulations', params: { title: item.title.replace('\n', ' ') } });
       }
     }
-  }, [lastCelebration]);
+  }, [router]);
+
+  // Celebrations only fire when the dashboard is focused (i.e. after leaving the dhikr page),
+  // one at a time, with a brief delay so the user feels they exited first.
+  useFocusEffect(
+    useCallback(() => {
+      if (celebrationQueue.length === 0) return;
+      const timer = setTimeout(() => {
+        const event = celebrationQueue[0];
+        clearFirstCelebration();
+        handleCelebrationEvent(event);
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [celebrationQueue, clearFirstCelebration, handleCelebrationEvent])
+  );
 
   // Cleanup hold timer
   useEffect(() => {
@@ -251,11 +256,11 @@ export default function DashboardScreen() {
 
   // Smart Rating Modal Trigger - dashboard focused + no celebration + review pending
   useEffect(() => {
-    if (isFocused && shouldShowReview && !lastCelebration && !showRatingModal) {
+    if (isFocused && shouldShowReview && celebrationQueue.length === 0 && !showRatingModal) {
       const timer = setTimeout(() => setShowRatingModal(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [isFocused, shouldShowReview, lastCelebration, showRatingModal]);
+  }, [isFocused, shouldShowReview, celebrationQueue, showRatingModal]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: goldPulse.value }],
@@ -745,8 +750,119 @@ export default function DashboardScreen() {
             return null;
           })()}
 
+          {/* فائدة اليوم */}
+          <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.benefitSection}>
+            <Pressable
+              onPress={() => showAlert('فائدة اليوم', dailyBenefit)}
+              style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
+            >
+              <View style={styles.benefitCard}>
+                <LinearGradient
+                  colors={['#064E3B', '#0D7A5F']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+                />
+                <View style={styles.benefitHeader}>
+                  <Pressable
+                    onPress={handleShareBenefit}
+                    style={({ pressed }) => [styles.benefitShareBtn, pressed && { opacity: 0.5 }]}
+                  >
+                    <MaterialIcons name="share" size={14} color={theme.gold} />
+                    <Text style={styles.benefitShareText}>انشر تؤجر</Text>
+                  </Pressable>
+                  <View style={styles.benefitTitleRow}>
+                    <MaterialIcons name="auto-awesome" size={20} color={theme.gold} />
+                    <Text style={styles.benefitTitle}>فائدة اليوم</Text>
+                  </View>
+                </View>
+                {(() => {
+                  const idx = dailyBenefit.lastIndexOf(' - ');
+                  const quote = idx !== -1 ? dailyBenefit.slice(0, idx) : dailyBenefit;
+                  const narrator = idx !== -1 ? dailyBenefit.slice(idx + 3) : '';
+                  return (
+                    <View style={styles.benefitBody}>
+                      <Text style={styles.benefitText} numberOfLines={2}>{quote}</Text>
+                      {narrator !== '' && (
+                        <Text style={styles.benefitNarrator}>{narrator}</Text>
+                      )}
+                    </View>
+                  );
+                })()}
+              </View>
+            </Pressable>
+          </Animated.View>
+
+          {/* Dhikr Action Grid */}
+          <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+            <View style={styles.dhikrGrid}>
+              {sortedDhikr.map((item, index) => {
+                const unlocked = isCardUnlocked(item.id);
+                const count = dhikrCounts[item.id] || 0;
+                const displayCount =
+                  item.id === 'tahlil'
+                    ? Math.floor(count / item.targetCount) * (item.slavesFreed || 0)
+                    : item.id === 'hasbiyallah'
+                    ? Math.floor(count / item.targetCount)
+                    : count;
+
+                return (
+                  <Animated.View
+                    key={item.id}
+                    entering={FadeInDown.delay(450 + index * 50).duration(400)}
+                  >
+                    <Pressable
+                      onPress={() => handleDhikrPress(item.id)}
+                      style={({ pressed }) => [
+                        styles.dhikrCard,
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
+                        unlocked && count > 0 && styles.dhikrCardActive,
+                        pressed && styles.dhikrCardPressed,
+                        !unlocked && pressed && { opacity: 0.5 },
+                      ]}
+                    >
+                      {unlocked ? (
+                        <View style={styles.dhikrCardInner}>
+                          <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
+                            <MaterialIcons name={item.icon as any} size={32} color={item.color} />
+                          </View>
+                          <View style={styles.dhikrTitleCenter}>
+                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                          </View>
+                          <View style={styles.dhikrCountSlot}>
+                            <Text style={[styles.dhikrCountText, { color: item.color, opacity: displayCount > 0 ? 1 : 0 }]}>
+                              {displayCount > 0 ? formatArabicNumber(displayCount, useWesternNumerals) : '0'}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.dhikrCardInnerLocked}>
+                          <View style={styles.dhikrIconCircleLocked}>
+                            <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
+                          </View>
+                          <View style={styles.dhikrTitleCenter}>
+                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                          </View>
+                          <View style={styles.dhikrCountSlotLocked}>
+                            <Text style={styles.dhikrReqText} numberOfLines={3}>
+                              {item.unlockRequirement || ''}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </Pressable>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </Animated.View>
+
           {/* وردي الخاص */}
-          <Animated.View entering={FadeInDown.delay(290).duration(500)} style={styles.morningSection}>
+          <Animated.View entering={FadeInDown.delay(450).duration(500)} style={styles.morningSection}>
             <View style={styles.wirdCardWrap}>
               <Pressable
                 onPress={() => router.push('/wird')}
@@ -806,111 +922,6 @@ export default function DashboardScreen() {
                   })()}
                 </View>
               </Pressable>
-            </View>
-          </Animated.View>
-
-          {/* فائدة اليوم */}
-          <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.benefitSection}>
-            <Pressable
-              onPress={() => showAlert('فائدة اليوم', dailyBenefit)}
-              style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
-            >
-              <View style={styles.benefitCard}>
-                <LinearGradient
-                  colors={['#064E3B', '#0D7A5F']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
-                />
-                <View style={styles.benefitHeader}>
-                  <Pressable
-                    onPress={handleShareBenefit}
-                    style={({ pressed }) => [styles.benefitShareBtn, pressed && { opacity: 0.5 }]}
-                  >
-                    <MaterialIcons name="share" size={14} color={theme.gold} />
-                    <Text style={styles.benefitShareText}>انشر تؤجر</Text>
-                  </Pressable>
-                  <View style={styles.benefitTitleRow}>
-                    <MaterialIcons name="auto-awesome" size={20} color={theme.gold} />
-                    <Text style={styles.benefitTitle}>فائدة اليوم</Text>
-                  </View>
-                </View>
-                {(() => {
-                  const idx = dailyBenefit.lastIndexOf(' - ');
-                  const quote = idx !== -1 ? dailyBenefit.slice(0, idx) : dailyBenefit;
-                  const narrator = idx !== -1 ? dailyBenefit.slice(idx + 3) : '';
-                  return (
-                    <View style={styles.benefitBody}>
-                      <Text style={styles.benefitText} numberOfLines={2}>{quote}</Text>
-                      {narrator !== '' && (
-                        <Text style={styles.benefitNarrator}>{narrator}</Text>
-                      )}
-                    </View>
-                  );
-                })()}
-              </View>
-            </Pressable>
-          </Animated.View>
-
-          {/* Dhikr Action Grid */}
-          <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-            <View style={styles.dhikrGrid}>
-              {sortedDhikr.map((item, index) => {
-                const unlocked = isCardUnlocked(item.id);
-                const count = dhikrCounts[item.id] || 0;
-
-                return (
-                  <Animated.View
-                    key={item.id}
-                    entering={FadeInDown.delay(450 + index * 50).duration(400)}
-                  >
-                    <Pressable
-                      onPress={() => handleDhikrPress(item.id)}
-                      style={({ pressed }) => [
-                        styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
-                        unlocked && count > 0 && styles.dhikrCardActive,
-                        pressed && styles.dhikrCardPressed,
-                        !unlocked && pressed && { opacity: 0.5 },
-                      ]}
-                    >
-                      {unlocked ? (
-                        <View style={styles.dhikrCardInner}>
-                          <View style={[styles.dhikrIconCircle, { backgroundColor: item.color + '18' }]}>
-                            <MaterialIcons name={item.icon as any} size={32} color={item.color} />
-                          </View>
-                          <View style={styles.dhikrTitleCenter}>
-                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
-                              {item.title}
-                            </Text>
-                          </View>
-                          <View style={styles.dhikrCountSlot}>
-                            <Text style={[styles.dhikrCountText, { color: item.color, opacity: count > 0 ? 1 : 0 }]}>
-                              {count > 0 ? formatArabicNumber(count, useWesternNumerals) : '0'}
-                            </Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <View style={styles.dhikrCardInnerLocked}>
-                          <View style={styles.dhikrIconCircleLocked}>
-                            <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
-                          </View>
-                          <View style={styles.dhikrTitleCenter}>
-                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
-                              {item.title}
-                            </Text>
-                          </View>
-                          <View style={styles.dhikrCountSlotLocked}>
-                            <Text style={styles.dhikrReqText} numberOfLines={3}>
-                              {item.unlockRequirement || ''}
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-                    </Pressable>
-                  </Animated.View>
-                );
-              })}
             </View>
           </Animated.View>
         </ScrollView>
@@ -1830,6 +1841,7 @@ const styles = StyleSheet.create({
   },
   wirdCardWrap: {
     position: 'relative',
+    marginTop: 20,
   },
   wirdGearBtn: {
     width: 30,

@@ -34,6 +34,7 @@ export default function BadgesScreen() {
     desc: string;
     color: string;
   }>({ visible: false, title: '', desc: '', color: '#D4AF37' });
+  const [guideModal, setGuideModal] = useState<{ visible: boolean; cardId: string | null }>({ visible: false, cardId: null });
   const [customGoalInput, setCustomGoalInput] = useState('');
 
   const totalDhikr = getTotalGlobalDhikr();
@@ -60,15 +61,10 @@ export default function BadgesScreen() {
 
   const getProgress = (cardDef: CardBadgeDef, current: number) => {
     const { nextLevel } = getCurrentRank(cardDef.cardId, dhikrCounts);
-    const level0 = cardDef.levels[0];
     const maxLevel = cardDef.levels[cardDef.levels.length - 1];
-    if (!level0) return 0;
     if (current >= maxLevel.required) return 1;
-    if (nextLevel) {
-      const prevRequired = cardDef.levels[Math.max(0, cardDef.levels.indexOf(nextLevel) - 1)].required;
-      return (current - prevRequired) / (nextLevel.required - prevRequired);
-    }
-    return 0;
+    const target = nextLevel ? nextLevel.required : cardDef.levels[0].required;
+    return Math.min(current / target, 1);
   };
 
   const handleBadgePress = (cardDef: CardBadgeDef) => {
@@ -87,14 +83,12 @@ export default function BadgesScreen() {
       const currentTier = TIER_INFO[level.tier];
       const nextTier = nextLevel ? TIER_INFO[nextLevel.tier] : null;
       const nextRequired = nextLevel?.required || maxLevel.required;
-      const prevLevel = cardDef.levels[Math.max(0, cardDef.levels.indexOf(level) - 1)];
-      const prevRequired = prevLevel ? prevLevel.required : 0;
-      const progress = Math.min((current - prevRequired) / (nextRequired - prevRequired), 1);
+      const progress = Math.min(current / nextRequired, 1);
 
       setBadgeModal({
         visible: true,
         title: `${currentTier.label} ${level.title}`,
-        desc: `المرتبة الحالية: ${level.title}\nالرتبة التالية: ${nextTier?.label || ''} ${nextLevel?.title || ''}\nالمطلوب: ${nextRequired.toLocaleString()}\nالتقدم: ${current.toLocaleString()} / ${nextRequired.toLocaleString()} (${Math.round(progress * 100)}%)`,
+        desc: `المرتبة الحالية: ${level.title}\nالرتبة التالية: ${nextTier?.label || ''} ${nextLevel?.title || ''}\nالمطلوب: ${nextRequired.toLocaleString()}\nالتقدم: ${current.toLocaleString()} / ${nextRequired.toLocaleString()} (${Math.floor(progress * 100)}%)`,
         color: level.color,
       });
     } else {
@@ -103,7 +97,7 @@ export default function BadgesScreen() {
       setBadgeModal({
         visible: true,
         title: `🔒 ${firstLevel.title}`,
-        desc: `${cardDef.cardTitle}\nالمطلوب: ${firstLevel.required.toLocaleString()}\nالتقدم: ${current.toLocaleString()} / ${firstLevel.required.toLocaleString()} (${Math.round(progress * 100)}%)`,
+        desc: `${cardDef.cardTitle}\nالمطلوب: ${firstLevel.required.toLocaleString()}\nالتقدم: ${current.toLocaleString()} / ${firstLevel.required.toLocaleString()} (${Math.floor(progress * 100)}%)`,
         color: 'rgba(255,255,255,0.3)',
       });
     }
@@ -206,7 +200,7 @@ export default function BadgesScreen() {
             الأوسمة — بطاقة تلو الأخرى
           </Text>
 
-          {CARD_BADGE_DEFINITIONS.filter(d => d.cardId !== 'hatt-khataya').map((cardDef, index) => {
+          {CARD_BADGE_DEFINITIONS.map((cardDef, index) => {
             const current = dhikrCounts[cardDef.cardId] || 0;
             const { level, nextLevel } = getCurrentRank(cardDef.cardId, dhikrCounts);
             const maxLevel = cardDef.levels[cardDef.levels.length - 1];
@@ -243,15 +237,27 @@ export default function BadgesScreen() {
                       {/* Top row: card title + rank badge */}
                       <View style={styles.topRow}>
                         <Text style={styles.cardTitle}>{cardDef.cardTitle}</Text>
-                        {level ? (
-                          <View style={[styles.currentRankBadge, { backgroundColor: `${displayColor}25`, borderColor: displayColor }]}>
-                            <Text style={[styles.currentRankText, { color: displayColor }]}>{currentTier?.label || ''}</Text>
-                          </View>
-                        ) : (
-                          <View style={styles.currentRankBadge}>
-                            <Text style={[styles.currentRankText, { color: 'rgba(255,255,255,0.3)' }]}>مغلق</Text>
-                          </View>
-                        )}
+                        <View style={styles.topRowActions}>
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setGuideModal({ visible: true, cardId: cardDef.cardId });
+                            }}
+                            hitSlop={10}
+                            style={({ pressed }) => [styles.cardInfoBtn, pressed && { opacity: 0.7 }]}
+                          >
+                            <MaterialIcons name="help-outline" size={16} color="rgba(255,255,255,0.5)" />
+                          </Pressable>
+                          {level ? (
+                            <View style={[styles.currentRankBadge, { backgroundColor: `${displayColor}25`, borderColor: displayColor }]}>
+                              <Text style={[styles.currentRankText, { color: displayColor }]}>{currentTier?.label || ''}</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.currentRankBadge}>
+                              <Text style={[styles.currentRankText, { color: 'rgba(255,255,255,0.3)' }]}>مغلق</Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
 
                       {/* Middle: current rank info */}
@@ -291,7 +297,7 @@ export default function BadgesScreen() {
                           <View style={styles.progressBarBg}>
                             <View style={[styles.progressBarFill, { width: `${Math.max(progress * 100, 2)}%`, backgroundColor: displayColor }]} />
                           </View>
-                          <Text style={[styles.progressText, { color: displayColor }]}>{Math.round(progress * 100)}%</Text>
+                          <Text style={[styles.progressText, { color: displayColor }]}>{Math.floor(progress * 100)}%</Text>
                         </View>
                       )}
 
@@ -325,10 +331,10 @@ export default function BadgesScreen() {
                           pressed && { opacity: 0.8 },
                         ]}
                       >
-                        <MaterialIcons name="arrow-forward" size={16} color={cardUnlocked ? btnColor : 'rgba(255,255,255,0.2)'} />
                         <Text style={[styles.actionBtnText, { color: cardUnlocked ? btnColor : 'rgba(255,255,255,0.2)' }]}>
                           {ACTION_LABELS[cardDef.cardId] || 'اذكر وارتقِ'}
                         </Text>
+                        <MaterialIcons name="arrow-back" size={16} color={cardUnlocked ? btnColor : 'rgba(255,255,255,0.2)'} />
                       </Pressable>
                     </View>
                   </View>
@@ -358,6 +364,58 @@ export default function BadgesScreen() {
                 ]}
               >
                 <Text style={[styles.modalBtnText, { color: badgeModal.color }]}>حسناً</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {/* Badges Guide Modal */}
+        <Modal visible={guideModal.visible} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => setGuideModal({ visible: false, cardId: null })}>
+            <Pressable style={[styles.infoModalCard, { borderColor: 'rgba(212,175,55,0.4)' }]}>
+              <LinearGradient
+                colors={['rgba(6,78,59,0.95)', 'rgba(2,44,34,0.98)']}
+                style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+              />
+              {(() => {
+                const cardDef = CARD_BADGE_DEFINITIONS.find(d => d.cardId === guideModal.cardId);
+                if (!cardDef) return null;
+                const cardItem = dhikrItems.find(d => d.id === cardDef.cardId);
+                return (
+                  <>
+                    <View style={styles.infoModalHeader}>
+                      <View style={[styles.infoModalIcon, { backgroundColor: `${cardItem?.color || '#D4AF37'}25` }]}>
+                        <MaterialIcons name={(cardItem?.icon as any) || 'stars'} size={20} color={cardItem?.color || '#D4AF37'} />
+                      </View>
+                      <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'center' }}>
+                        <Text style={styles.infoModalTitle}>{cardDef.cardTitle}</Text>
+                        <Text style={styles.infoModalSubtitle}>تدرّج المراتب والعدد المطلوب</Text>
+                      </View>
+                    </View>
+                    <ScrollView style={{ height: 260 }} showsVerticalScrollIndicator={false}>
+                      {cardDef.levels.map(lvl => (
+                        <View key={lvl.tier} style={[styles.infoLevelRow, { borderColor: `${lvl.metalColor}40` }]}>
+                          <View style={[styles.infoLevelAccent, { backgroundColor: lvl.metalColor }]} />
+                          <View style={[styles.infoTierChip, { backgroundColor: `${lvl.metalColor}25`, borderColor: lvl.metalColor }]}>
+                            <Text style={[styles.infoTierText, { color: lvl.metalColor }]}>{TIER_INFO[lvl.tier].label}</Text>
+                          </View>
+                          <Text style={[styles.infoLevelTitle, { color: lvl.color }]}>{lvl.title}</Text>
+                          <Text style={[styles.infoLevelRequired, { color: lvl.color }]}>{lvl.required.toLocaleString()}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </>
+                );
+              })()}
+              <Pressable
+                onPress={() => setGuideModal({ visible: false, cardId: null })}
+                style={({ pressed }) => [
+                  styles.modalBtn,
+                  { borderColor: 'rgba(212,175,55,0.5)', marginTop: 16, alignSelf: 'center' },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Text style={[styles.modalBtnText, { color: theme.gold }]}>حسناً</Text>
               </Pressable>
             </Pressable>
           </Pressable>
@@ -500,6 +558,98 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     marginBottom: 14,
   },
+  topRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardInfoBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoModalCard: {
+    width: '100%',
+    maxWidth: 340,
+    maxHeight: '80%',
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: 20,
+  },
+  infoModalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFF',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    includeFontPadding: false,
+  },
+  infoModalSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    marginTop: 2,
+  },
+  infoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    direction: 'rtl',
+  },
+  infoModalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoLevelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    marginBottom: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    direction: 'rtl',
+  },
+  infoLevelAccent: {
+    width: 3,
+    height: '70%',
+    borderRadius: 1.5,
+  },
+  infoTierChip: {
+    width: 44,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  infoTierText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  infoLevelTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    writingDirection: 'rtl',
+  },
+  infoLevelRequired: {
+    fontSize: 13,
+    fontWeight: '900',
+  },
   badgeCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -507,16 +657,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     minHeight: 120,
+    direction: 'rtl',
   },
   rankBar: {
     width: 4,
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
   },
   cardContent: {
     flex: 1,
     padding: 16,
-    paddingLeft: 12,
+    paddingRight: 12,
   },
   topRow: {
     flexDirection: 'row',

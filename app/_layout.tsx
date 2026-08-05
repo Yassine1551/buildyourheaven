@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, Platform, View, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -20,45 +19,12 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const WAKEUP_SHOWN_KEY = 'wakeup_shown_date';
-
-function getTodayDateString(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-async function checkAndShowWakeup() {
-  try {
-    const hour = new Date().getHours();
-    if (hour < 4) return;
-
-    const today = getTodayDateString();
-    const shown = await AsyncStorage.getItem(WAKEUP_SHOWN_KEY);
-    if (shown === today) return;
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '☀️ أذكار الاستيقاظ',
-        body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
-        data: { route: '/wakeup-adhkar' },
-        sound: true,
-      },
-      trigger: null,
-    });
-    await AsyncStorage.setItem(WAKEUP_SHOWN_KEY, today);
-  } catch (_) {}
-}
-
 export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const [showLogo, setShowLogo] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    checkAndShowWakeup();
     scheduleAllAdhkar().catch(() => {});
 
     const notificationSub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -76,7 +42,6 @@ export default function RootLayout() {
 
     const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && state === 'active') {
-        checkAndShowWakeup();
         clearExpiredNotifications().catch(() => {});
       }
       appState.current = state;

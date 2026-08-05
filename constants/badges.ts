@@ -85,14 +85,14 @@ export interface CardBadgeDef {
 }
 
 export const TIER_INFO: Record<BadgeTier, { label: string; metalColor: string }> = {
-  copper: { label: 'نحاسي', metalColor: '#B87333' },
+  copper: { label: 'نحاسي', metalColor: '#C2553B' },
   bronze: { label: 'برونزي', metalColor: '#CD7F32' },
   silver: { label: 'فضي',   metalColor: '#C0C0C0' },
   gold:   { label: 'ذهبي',  metalColor: '#D4AF37' },
   diamond: { label: 'ماسي', metalColor: '#5CE1E6' },
 };
 
-const COPPER = '#B87333';
+const COPPER = '#C2553B';
 const BRONZE = '#CD7F32';
 const SILVER = '#94A3B8';
 const GOLD = '#D4AF37';
@@ -108,6 +108,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'مستغفر الأسحار',       required: 500,  color: BRONZE, metalColor: BRONZE, icon: 'cleaning-services' },
       { tier: 'silver', title: 'مستغفر الدهر',         required: 1000, color: SILVER, metalColor: SILVER, icon: 'cleaning-services' },
       { tier: 'gold',   title: 'المستغفر الرباني',     required: 5000, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'إمام المستغفرين',      required: 10000, color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
     ],
   },
   {
@@ -115,10 +116,11 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
     cardTitle: 'ألف حسنة',
     usesInternalCounter: true,
     levels: [
-      { tier: 'copper', title: 'المسبح النحاسي',     required: 1,   color: COPPER, metalColor: COPPER, icon: 'auto-awesome' },
-      { tier: 'bronze', title: 'المسبح البرونزي',    required: 3,   color: BRONZE, metalColor: BRONZE, icon: 'auto-awesome' },
-      { tier: 'silver', title: 'المسبح الفضي',       required: 5,   color: SILVER, metalColor: SILVER, icon: 'auto-awesome' },
-      { tier: 'gold',   title: 'المسبح الذهبي',      required: 10,  color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'copper', title: 'المسبح النحاسي',     required: 2,   color: COPPER, metalColor: COPPER, icon: 'auto-awesome' },
+      { tier: 'bronze', title: 'المسبح البرونزي',    required: 7,   color: BRONZE, metalColor: BRONZE, icon: 'auto-awesome' },
+      { tier: 'silver', title: 'المسبح الفضي',       required: 10,  color: SILVER, metalColor: SILVER, icon: 'auto-awesome' },
+      { tier: 'gold',   title: 'المسبح الذهبي',      required: 25,  color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'المسبح الملكوتي',    required: 50,  color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
     ],
   },
   {
@@ -126,10 +128,11 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
     cardTitle: 'نخلة في الجنة',
     usesInternalCounter: false,
     levels: [
-      { tier: 'copper', title: 'زارع النخيل النحاسي',  required: 100,  color: COPPER, metalColor: COPPER, icon: 'park' },
-      { tier: 'bronze', title: 'زارع النخيل البرونزي', required: 300,  color: BRONZE, metalColor: BRONZE, icon: 'park' },
-      { tier: 'silver', title: 'زارع النخيل الفضي',    required: 500,  color: SILVER, metalColor: SILVER, icon: 'park' },
-      { tier: 'gold',   title: 'زارع النخيل الذهبي',   required: 1000, color: GOLD,   metalColor: GOLD,   icon: 'park' },
+      { tier: 'copper', title: 'زارع النخيل النحاسي',  required: 200,  color: COPPER, metalColor: COPPER, icon: 'park' },
+      { tier: 'bronze', title: 'زارع النخيل البرونزي', required: 500,  color: BRONZE, metalColor: BRONZE, icon: 'park' },
+      { tier: 'silver', title: 'زارع النخيل الفضي',    required: 1000, color: SILVER, metalColor: SILVER, icon: 'park' },
+      { tier: 'gold',   title: 'زارع النخيل الذهبي',   required: 5000, color: GOLD,   metalColor: GOLD,   icon: 'park' },
+      { tier: 'diamond', title: 'زارع الجنات الماسي',   required: 10000, color: DIAMOND, metalColor: DIAMOND, icon: 'park' },
     ],
   },
   {
@@ -141,6 +144,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'المتحصن البرونزي',  required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'shield' },
       { tier: 'silver', title: 'المتحصن الفضي',     required: 100, color: SILVER, metalColor: SILVER, icon: 'shield' },
       { tier: 'gold',   title: 'المتحصن الذهبي',    required: 500, color: GOLD,   metalColor: GOLD,   icon: 'verified' },
+      { tier: 'diamond', title: 'المتحصن الماسي',    required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'verified' },
     ],
   },
   {
@@ -152,6 +156,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'ملازم الصلاة',        required: 500,  color: BRONZE, metalColor: BRONZE, icon: 'star' },
       { tier: 'silver', title: 'صاحب الشفاعة',        required: 1000, color: SILVER, metalColor: SILVER, icon: 'star' },
       { tier: 'gold',   title: 'حبيب المصطفى',        required: 5000, color: GOLD,   metalColor: GOLD,   icon: 'emoji-events' },
+      { tier: 'diamond', title: 'دائم الصلاة على النبي ﷺ', required: 10000, color: DIAMOND, metalColor: DIAMOND, icon: 'emoji-events' },
     ],
   },
   {
@@ -159,10 +164,11 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
     cardTitle: 'ثلث القرآن',
     usesInternalCounter: false,
     levels: [
-      { tier: 'copper', title: 'تالي القرآن',       required: 10,  color: COPPER, metalColor: COPPER, icon: 'menu-book' },
-      { tier: 'bronze', title: 'مرتل الآيات',       required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'menu-book' },
-      { tier: 'silver', title: 'حامل القرآن',        required: 100, color: SILVER, metalColor: SILVER, icon: 'menu-book' },
-      { tier: 'gold',   title: 'خادم القرآن',        required: 500, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'copper', title: 'تالي القرآن',       required: 30,  color: COPPER, metalColor: COPPER, icon: 'menu-book' },
+      { tier: 'bronze', title: 'مرتل الآيات',       required: 100, color: BRONZE, metalColor: BRONZE, icon: 'menu-book' },
+      { tier: 'silver', title: 'حامل القرآن',        required: 500, color: SILVER, metalColor: SILVER, icon: 'menu-book' },
+      { tier: 'gold',   title: 'خادم القرآن',        required: 1000, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'حامل النور',        required: 10000, color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
     ],
   },
   {
@@ -174,6 +180,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'صاحب الكنوز البرونزي', required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'diamond' },
       { tier: 'silver', title: 'صاحب الكنوز الفضي',    required: 100, color: SILVER, metalColor: SILVER, icon: 'diamond' },
       { tier: 'gold',   title: 'صاحب الكنوز الذهبي',   required: 500, color: GOLD,   metalColor: GOLD,   icon: 'treasure-chest' },
+      { tier: 'diamond', title: 'صاحب الكنوز الماسي',   required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'treasure-chest' },
     ],
   },
   {
@@ -185,6 +192,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'المتصدق البرونزي',  required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'volunteer-activism' },
       { tier: 'silver', title: 'المتصدق الفضي',     required: 100, color: SILVER, metalColor: SILVER, icon: 'volunteer-activism' },
       { tier: 'gold',   title: 'المتصدق الذهبي',    required: 500, color: GOLD,   metalColor: GOLD,   icon: 'volunteer-activism' },
+      { tier: 'diamond', title: 'المتصدق الماسي',    required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'volunteer-activism' },
     ],
   },
   {
@@ -196,6 +204,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'ثقيل الميزان البرونزي', required: 25,  color: BRONZE, metalColor: BRONZE, icon: 'balance' },
       { tier: 'silver', title: 'ثقيل الميزان الفضي',    required: 50,  color: SILVER, metalColor: SILVER, icon: 'balance' },
       { tier: 'gold',   title: 'ثقيل الميزان الذهبي',   required: 100, color: GOLD,   metalColor: GOLD,   icon: 'balance' },
+      { tier: 'diamond', title: 'ثقيل الميزان الماسي',   required: 200, color: DIAMOND, metalColor: DIAMOND, icon: 'balance' },
     ],
   },
   {
@@ -207,6 +216,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'جامع الكلم البرونزي', required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'all-inclusive' },
       { tier: 'silver', title: 'جامع الكلم الفضي',    required: 100, color: SILVER, metalColor: SILVER, icon: 'all-inclusive' },
       { tier: 'gold',   title: 'جامع الكلم الذهبي',   required: 500, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'جامع الكلم الماسي',   required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
     ],
   },
   {
@@ -218,6 +228,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'باني القصور البرونزي', required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'castle' },
       { tier: 'silver', title: 'باني القصور الفضي',    required: 100, color: SILVER, metalColor: SILVER, icon: 'castle' },
       { tier: 'gold',   title: 'باني القصور الذهبي',   required: 500, color: GOLD,   metalColor: GOLD,   icon: 'castle' },
+      { tier: 'diamond', title: 'باني القصور الماسي',   required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'castle' },
     ],
   },
   {
@@ -229,6 +240,7 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
       { tier: 'bronze', title: 'ناظم الجواهر البرونزي', required: 25,  color: BRONZE, metalColor: BRONZE, icon: 'diamond' },
       { tier: 'silver', title: 'ناظم الجواهر الفضي',    required: 50,  color: SILVER, metalColor: SILVER, icon: 'diamond' },
       { tier: 'gold',   title: 'ناظم الجواهر الذهبي',   required: 100, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'ناظم الجواهر الماسي',   required: 200, color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
     ],
   },
   {
@@ -236,10 +248,35 @@ export const CARD_BADGE_DEFINITIONS: CardBadgeDef[] = [
     cardTitle: 'حط الخطايا',
     usesInternalCounter: true,
     levels: [
-      { tier: 'copper', title: 'حاط الخطايا النحاسي',  required: 1,  color: COPPER, metalColor: COPPER, icon: 'cleaning-services' },
-      { tier: 'bronze', title: 'حاط الخطايا البرونزي', required: 3,  color: BRONZE, metalColor: BRONZE, icon: 'cleaning-services' },
-      { tier: 'silver', title: 'حاط الخطايا الفضي',    required: 5,  color: SILVER, metalColor: SILVER, icon: 'cleaning-services' },
-      { tier: 'gold',   title: 'حاط الخطايا الذهبي',   required: 10, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'copper', title: 'حاط الخطايا النحاسي',  required: 2,  color: COPPER, metalColor: COPPER, icon: 'cleaning-services' },
+      { tier: 'bronze', title: 'حاط الخطايا البرونزي', required: 5,  color: BRONZE, metalColor: BRONZE, icon: 'cleaning-services' },
+      { tier: 'silver', title: 'حاط الخطايا الفضي',    required: 10, color: SILVER, metalColor: SILVER, icon: 'cleaning-services' },
+      { tier: 'gold',   title: 'حاط الخطايا الذهبي',   required: 25, color: GOLD,   metalColor: GOLD,   icon: 'auto-awesome' },
+      { tier: 'diamond', title: 'حاط الخطايا الماسي',   required: 50, color: DIAMOND, metalColor: DIAMOND, icon: 'auto-awesome' },
+    ],
+  },
+  {
+    cardId: 'hasbiyallah',
+    cardTitle: 'كفاية الهم',
+    usesInternalCounter: false,
+    levels: [
+      { tier: 'copper', title: 'المتوكل النحاسي',    required: 10,  color: COPPER, metalColor: COPPER, icon: 'security' },
+      { tier: 'bronze', title: 'المتوكل البرونزي',   required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'security' },
+      { tier: 'silver', title: 'المتوكل الفضي',      required: 100, color: SILVER, metalColor: SILVER, icon: 'security' },
+      { tier: 'gold',   title: 'المتوكل الذهبي',     required: 500, color: GOLD,   metalColor: GOLD,   icon: 'verified-user' },
+      { tier: 'diamond', title: 'المتوكل الماسي',     required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'verified-user' },
+    ],
+  },
+  {
+    cardId: 'tahlil',
+    cardTitle: 'عتق الرقاب',
+    usesInternalCounter: false,
+    levels: [
+      { tier: 'copper', title: 'عاتق الرقاب النحاسي',  required: 10,  color: COPPER, metalColor: COPPER, icon: 'people' },
+      { tier: 'bronze', title: 'عاتق الرقاب البرونزي', required: 50,  color: BRONZE, metalColor: BRONZE, icon: 'people' },
+      { tier: 'silver', title: 'عاتق الرقاب الفضي',    required: 100, color: SILVER, metalColor: SILVER, icon: 'people' },
+      { tier: 'gold',   title: 'عاتق الرقاب الذهبي',   required: 500, color: GOLD,   metalColor: GOLD,   icon: 'handshake' },
+      { tier: 'diamond', title: 'عاتق الرقاب الماسي',   required: 1000, color: DIAMOND, metalColor: DIAMOND, icon: 'handshake' },
     ],
   },
 ];
@@ -281,7 +318,6 @@ export function getNewBadges(
 ): string[] {
   const newBadges: string[] = [];
   for (const def of CARD_BADGE_DEFINITIONS) {
-    if (def.cardId === 'hatt-khataya') continue; // locked card - skip badge check
     const current = dhikrCounts[def.cardId] || 0;
     for (const level of def.levels) {
       const badgeId = getBadgeId(def.cardId, level.tier);

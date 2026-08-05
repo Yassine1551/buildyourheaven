@@ -36,15 +36,19 @@ const STROKE_WIDTH = 8;
 export default function MihrabScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { incrementDhikr, soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals, isDarkMode, toggleDarkMode } = useApp();
+  const { incrementDhikr, soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals, isDarkMode, toggleDarkMode, internalDhikrCounts } = useApp();
 
   const item = useMemo(() => dhikrItems.find(d => d.id === id), [id]);
   if (!item) return null;
 
   // Session-based counter - starts at 0 each time
   const [sessionCount, setSessionCount] = useState(0);
-  const isComplete = sessionCount >= item.targetCount;
-  const progress = Math.min(sessionCount / item.targetCount, 1);
+  const isAlfHasana = item.id === 'alf-hasana';
+  const isHattKhataya = item.id === 'hatt-khataya';
+  // Alf-hasana & hatt-khataya: the in-card counter persists across visits during the day (reset on new day)
+  const displayCount = (isAlfHasana || isHattKhataya) ? (internalDhikrCounts[item.id] || 0) : sessionCount;
+  const isComplete = displayCount >= item.targetCount;
+  const progress = Math.min(displayCount / item.targetCount, 1);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationShownForTarget, setCelebrationShownForTarget] = useState(false);
 
@@ -60,7 +64,14 @@ export default function MihrabScreen() {
 
   const handleShare = useCallback(() => {
     const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
-    const msg = `من قال ${formatCountWithMarra(item.targetCount)} :\n\n"${item.dhikrText}"\n\n"${item.fadl}"\n\n-------------------------------------\n📌 حمّل تطبيق "ابنِ جنتك" - لتغنم كنوز الأذكار 👇\n${appLink}`;
+    const isQuran = item.id === 'thuluth-quran' || item.id === 'dhikr_qasr';
+    if (isQuran) {
+      // Special case: publish the surah only, fadl below it, then the link
+      const msg = `${item.dhikrText}\n\n${item.fadl}\n\n-------------------------------------\n📌 حمّل تطبيق "ابنِ جنتك" - لتغنم كنوز الأذكار 👇\n${appLink}`;
+      Share.share({ message: msg });
+      return;
+    }
+    const msg = `من قال ${formatCountWithMarra(item.targetCount)}:\n\n«${item.dhikrText}»\n\nقال رسول الله ﷺ: «${item.fadl}»\n\n📖 ${item.daleel}\n\n-------------------------------------\n📌 حمّل تطبيق "ابنِ جنتك" - لتغنم كنوز الأذكار 👇\n${appLink}`;
     Share.share({ message: msg });
   }, [item, useWesternNumerals]);
 
@@ -87,7 +98,7 @@ export default function MihrabScreen() {
     }
 
     // Increment session counter
-    const newCount = sessionCount + 1;
+    const newCount = displayCount + 1;
     setSessionCount(newCount);
 
     // Increment global stats
@@ -166,7 +177,7 @@ export default function MihrabScreen() {
           fadl={item.fadl}
           dhikrText={item.dhikrText}
           itemId={item.id}
-          sessionCount={sessionCount}
+          sessionCount={displayCount}
           targetCount={item.targetCount}
           color={item.color}
           onTap={handleTap}

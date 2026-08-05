@@ -23,7 +23,8 @@ interface AppState {
   level: number;
   istiqama: number;
   unlockedCards: string[];
-  lastCelebration: string | null;
+  celebrationQueue: string[];
+  internalDhikrCounts: Record<string, number>;
   morningCounts: Record<string, number>;
   sleepCounts: Record<string, number>;
   eveningCounts: Record<string, number>;
@@ -43,7 +44,7 @@ interface AppContextType extends AppState {
   dismissWelcome: () => void;
   isCardUnlocked: (dhikrId: string) => boolean;
   getUnlockRequirement: (dhikrId: string) => string;
-  clearCelebration: () => void;
+  clearFirstCelebration: () => void;
   rankTitle: string;
   soundEnabled: boolean;
   vibrationEnabled: boolean;
@@ -105,15 +106,18 @@ function computeIsUnlocked(
     case 'alf-hasana': return (counts['maghfira'] || 0) >= 10;
     case 'nakhla': return (counts['alf-hasana'] || 0) >= 3;
     case 'hatt-khataya': return (counts['nakhla'] || 0) >= 200;
-    case 'salat-nabi': return (counts['hatt-khataya'] || 0) >= 10;
+    case 'salat-nabi': return (counts['hatt-khataya'] || 0) >= 1;
     case 'thuluth-quran': return (counts['salat-nabi'] || 0) >= 200;
     case 'kanz': return (counts['thuluth-quran'] || 0) >= 100;
     case 'dhikr_qasr': return (counts['kanz'] || 0) >= 200;
     case 'milul-mizan': return (counts['dhikr_qasr'] || 0) >= 100;
-    case 'sadaqat-dhikr': return (counts['milul-mizan'] || 0) >= 200;
-    case 'hirz': return (counts['sadaqat-dhikr'] || 0) >= 1000;
-    case 'jawamie': return (counts['hirz'] || 0) >= 1;
+    case 'sadaqat-dhikr': return (counts['dhikr_qasr'] || 0) >= 100;
+    case 'tahlil': return (counts['sadaqat-dhikr'] || 0) >= 300;
+    case 'jawamie': return (counts['tahlil'] || 0) >= 100;
     case 'jawahir': return (counts['jawamie'] || 0) >= 33;
+    case 'hasbiyallah': return (counts['jawahir'] || 0) >= 10;
+    case 'hirz': return (counts['hasbiyallah'] || 0) >= 500;
+    case 'milul-mizan': return (counts['hirz'] || 0) >= 1;
     default: return false;
   }
 }
@@ -122,6 +126,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [hasanat, setHasanat] = useState(0);
   const [dhikrCounts, setDhikrCounts] = useState<Record<string, number>>(initialDhikrCounts);
   const [internalDhikrCounts, setInternalDhikrCounts] = useState<Record<string, number>>({});
+  const [alfHasanaDate, setAlfHasanaDate] = useState<string>('');
+  const [hattKhatayaDate, setHattKhatayaDate] = useState<string>('');
   const [stats, setStats] = useState<Record<string, number>>(initialStats);
   const [targetStartDate] = useState('2024-01-15');
   const [userName, setUserNameState] = useState('');
@@ -129,7 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [level, setLevel] = useState(1);
   const [istiqama, setIstiqama] = useState(0);
   const [unlockedCards, setUnlockedCards] = useState<string[]>(['maghfira']);
-  const [lastCelebration, setLastCelebration] = useState<string | null>(null);
+  const [celebrationQueue, setCelebrationQueue] = useState<string[]>([]);
   const [dailyLog, setDailyLog] = useState<Record<string, number>>({});
   const [dailyGoal, setDailyGoalState] = useState(500);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -169,7 +175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -180,10 +186,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([
+      const [savedHasanat, savedDhikr, savedInternal, savedAlfHasanaDate, savedHattKhatayaDate, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([
         AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
+        AsyncStorage.getItem('alf_hasana_date'),
+        AsyncStorage.getItem('hatt_khataya_date'),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.stats),
         AsyncStorage.getItem('user_name'),
         AsyncStorage.getItem('user_gender'),
@@ -209,7 +217,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ]);
       if (savedHasanat) setHasanat(JSON.parse(savedHasanat));
       if (savedDhikr) setDhikrCounts(JSON.parse(savedDhikr));
-      if (savedInternal) setInternalDhikrCounts(JSON.parse(savedInternal));
+      if (savedInternal) {
+        const parsedInternal = JSON.parse(savedInternal);
+        const today = getTodayDateString();
+        // Alf-hasana: daily counter resets on a new day only if the daily 100 wasn't completed
+        if (savedAlfHasanaDate !== today && (parsedInternal['alf-hasana'] || 0) < 100) {
+          parsedInternal['alf-hasana'] = 0;
+        }
+        // Hatt-khataya: daily counter resets on a new day only if the daily 100 wasn't completed
+        if (savedHattKhatayaDate !== today && (parsedInternal['hatt-khataya'] || 0) < 100) {
+          parsedInternal['hatt-khataya'] = 0;
+        }
+        setInternalDhikrCounts(parsedInternal);
+      }
+      setAlfHasanaDate(getTodayDateString());
+      setHattKhatayaDate(getTodayDateString());
       if (savedStats) setStats(JSON.parse(savedStats));
       if (savedName) setUserNameState(savedName);
       if (savedGender) setGenderState(savedGender as 'male' | 'female');
@@ -268,6 +290,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem(APP_CONFIG.storageKeys.hasanat, JSON.stringify(hasanat)),
         AsyncStorage.setItem(APP_CONFIG.storageKeys.dhikrCounts, JSON.stringify(dhikrCounts)),
         AsyncStorage.setItem('internal_dhikr_counts', JSON.stringify(internalDhikrCounts)),
+        AsyncStorage.setItem('alf_hasana_date', alfHasanaDate),
+        AsyncStorage.setItem('hatt_khataya_date', hattKhatayaDate),
         AsyncStorage.setItem('user_gender', gender),
         AsyncStorage.setItem('user_epithet', epithet),
         AsyncStorage.setItem('user_badges', JSON.stringify(badges)),
@@ -304,7 +328,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTotalGlobalDhikr = useCallback(() => {
     let total = 0;
     for (const [key, val] of Object.entries(dhikrCounts)) {
-      if (key !== 'alf-hasana' && key !== 'dhikr_qasr') total += val;
+      if (key !== 'alf-hasana' && key !== 'hatt-khataya' && key !== 'dhikr_qasr') total += val;
     }
     Object.values(internalDhikrCounts).forEach(v => { total += v; });
     Object.values(morningCounts).forEach(v => { total += v; });
@@ -361,13 +385,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ============================================================
   // BADGE SYSTEM
   // ============================================================
+  const enqueueCelebration = useCallback((event: string) => {
+    setCelebrationQueue(prev => [...prev, event]);
+  }, []);
+
   const awardBadge = useCallback((badgeId: string) => {
     setBadges(prev => {
       if (prev.includes(badgeId)) return prev;
       return [...prev, badgeId];
     });
-    setLastCelebration(`badge_${badgeId}`);
-  }, []);
+    enqueueCelebration(`badge_${badgeId}`);
+  }, [enqueueCelebration]);
 
   const checkBadges = useCallback((overrides?: { dhikrCounts?: Record<string, number>; stats?: Record<string, number>; hasanat?: number }): boolean => {
     const newIds = getNewBadges(badges, overrides?.dhikrCounts ?? dhikrCounts, overrides?.stats ?? stats, overrides?.hasanat ?? hasanat);
@@ -383,17 +411,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!item) return;
 
     const isAlfHasana = dhikrId === 'alf-hasana';
+    const isHattKhataya = dhikrId === 'hatt-khataya';
+    const isInternalCounterCard = isAlfHasana || isHattKhataya;
 
-    // Alf-hasana: internal counters track raw taps, dhikrCounts store completions
-    const effectiveTapCount = isAlfHasana
-      ? (internalDhikrCounts[dhikrId] || 0) + 1
-      : (dhikrCounts[dhikrId] || 0) + 1;
+    // Internal-counter cards (alf-hasana, hatt-khataya): internal counters track daily
+    // raw taps, dhikrCounts store completions. The in-card counter persists across
+    // visits during the day and resets on a new day only if the daily target wasn't completed.
+    let effectiveTapCount: number;
+    if (isInternalCounterCard) {
+      const today = getTodayDateString();
+      let baseInternal = internalDhikrCounts[dhikrId] || 0;
+      const dateState = isAlfHasana ? alfHasanaDate : hattKhatayaDate;
+      const setDateState = isAlfHasana ? setAlfHasanaDate : setHattKhatayaDate;
+      if (dateState !== today && baseInternal < item.targetCount) {
+        baseInternal = 0;
+      }
+      if (dateState !== today) setDateState(today);
+      effectiveTapCount = baseInternal + 1;
+    } else {
+      effectiveTapCount = (dhikrCounts[dhikrId] || 0) + 1;
+    }
 
     const isTargetHit = effectiveTapCount % item.targetCount === 0;
 
     let newDhikrCounts: Record<string, number>;
     let newInternalCounts: Record<string, number> | undefined;
-    if (isAlfHasana) {
+    if (isInternalCounterCard) {
       newDhikrCounts = {
         ...dhikrCounts,
         [dhikrId]: isTargetHit ? (dhikrCounts[dhikrId] || 0) + 1 : (dhikrCounts[dhikrId] || 0),
@@ -405,14 +448,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const newStats = { ...stats };
 
-    // Alf-hasana: delayed gratification - only add hasanat on target hits (every 100)
-    const newHasanat = isAlfHasana
-      ? (isTargetHit ? hasanat + hasanatPerCount * item.targetCount : hasanat)
-      : hasanat + hasanatPerCount;
+    // Every tap grants hasanat immediately (alf-hasana: 10 per tap, 1000 on completing 100)
+    const newHasanat = hasanat + hasanatPerCount;
 
     // Per-tap special: jawamie adds +60min (1h) per click
     if (dhikrId === 'jawamie') {
       newStats.extra_life_minutes = (newStats.extra_life_minutes || 0) + 60;
+    }
+
+    // Per-tap special: hatt-khataya grants +1 sadaqah per tap
+    if (dhikrId === 'hatt-khataya') {
+      newStats.sadaqat = (newStats.sadaqat || 0) + 1;
     }
 
     if (isTargetHit) {
@@ -487,7 +533,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setHasanat(newHasanat);
     setIstiqama(newIstiqama);
     if (newLevel > level) setLevel(newLevel);
-    const hadNewBadge = checkBadges({ dhikrCounts: newDhikrCounts, stats: newStats, hasanat: newHasanat });
+    checkBadges({ dhikrCounts: newDhikrCounts, stats: newStats, hasanat: newHasanat });
     incrementTodayCount();
 
     // Smart Haptics: target hit OR global multiple of 100
@@ -499,17 +545,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Badge celebrations take priority over unlock
-    if (!hadNewBadge) {
-      if (newlyUnlockedId) {
-        setLastCelebration(`unlock_${newlyUnlockedId}`);
-        // Smart Rating Trigger 2: deferred + new unlock => re-arm review prompt
-        if (reviewState === 'deferred') {
-          setShouldShowReview(true);
-        }
+    // Queue unlock celebrations too (badge + unlock shown in sequence on exit)
+    if (newlyUnlockedId) {
+      enqueueCelebration(`unlock_${newlyUnlockedId}`);
+      // Smart Rating Trigger 2: deferred + new unlock => re-arm review prompt
+      if (reviewState === 'deferred') {
+        setShouldShowReview(true);
       }
     }
-  }, [dhikrCounts, internalDhikrCounts, stats, hasanat, istiqama, level, vibrationEnabled, targetStartDate, getTotalGlobalDhikr, reviewState, checkBadges]);
+  }, [dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, getTodayDateString, stats, hasanat, istiqama, level, vibrationEnabled, targetStartDate, getTotalGlobalDhikr, reviewState, checkBadges, enqueueCelebration]);
 
   // ============================================================
   // ADHKAR INCREMENTS (Morning/Evening/Sleep/Wakeup)
@@ -644,7 +688,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetDhikr = useCallback((dhikrId: string) => {
     setDhikrCounts(prev => ({ ...prev, [dhikrId]: 0 }));
-    if (dhikrId === 'alf-hasana' || dhikrId === 'dhikr_qasr') {
+    if (dhikrId === 'alf-hasana' || dhikrId === 'hatt-khataya' || dhikrId === 'dhikr_qasr') {
       setInternalDhikrCounts(prev => ({ ...prev, [dhikrId]: 0 }));
     }
   }, []);
@@ -681,22 +725,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return computeIsUnlocked(dhikrId, dhikrCounts, stats, isDevUnlocked);
   }, [dhikrCounts, stats, isDevUnlocked]);
 
-  const clearCelebration = useCallback(() => { setLastCelebration(null); }, []);
+  const clearFirstCelebration = useCallback(() => {
+    setCelebrationQueue(prev => prev.slice(1));
+  }, []);
 
   const getUnlockRequirement = useCallback((dhikrId: string): string => {
     switch (dhikrId) {
       case 'alf-hasana': { const r = Math.max(0, 10 - (dhikrCounts['maghfira'] || 0)); return r > 0 ? `مطلوب 10 مغفرة الذنوب (متبقي: ${r})` : ''; }
       case 'nakhla': { const r = Math.max(0, 3 - (dhikrCounts['alf-hasana'] || 0)); return r > 0 ? `مطلوب 3 ألف حسنة (متبقي: ${r})` : ''; }
       case 'hatt-khataya': { const r = Math.max(0, 200 - (dhikrCounts['nakhla'] || 0)); return r > 0 ? `مطلوب 200 نخلة في الجنة (متبقي: ${r})` : ''; }
-      case 'salat-nabi': { const r = Math.max(0, 10 - (dhikrCounts['hatt-khataya'] || 0)); return r > 0 ? `مطلوب 10 حط الخطايا (متبقي: ${r})` : ''; }
+      case 'salat-nabi': { const r = Math.max(0, 1 - (dhikrCounts['hatt-khataya'] || 0)); return r > 0 ? `مطلوب مرة واحدة حط الخطايا (متبقي: ${r})` : ''; }
       case 'thuluth-quran': { const r = Math.max(0, 200 - (dhikrCounts['salat-nabi'] || 0)); return r > 0 ? `مطلوب 200 صلاة على النبي (متبقي: ${r})` : ''; }
       case 'kanz': { const r = Math.max(0, 100 - (dhikrCounts['thuluth-quran'] || 0)); return r > 0 ? `مطلوب 100 ثلث القرآن (متبقي: ${r})` : ''; }
       case 'dhikr_qasr': { const r = Math.max(0, 200 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 200 كنز الجنة (متبقي: ${r})` : ''; }
-      case 'milul-mizan': { const r = Math.max(0, 100 - (dhikrCounts['dhikr_qasr'] || 0)); return r > 0 ? `مطلوب 100 قصر في الجنة (متبقي: ${r})` : ''; }
-      case 'sadaqat-dhikr': { const r = Math.max(0, 200 - (dhikrCounts['milul-mizan'] || 0)); return r > 0 ? `مطلوب 200 ملء الميزان (متبقي: ${r})` : ''; }
-      case 'hirz': { const r = Math.max(0, 1000 - (dhikrCounts['sadaqat-dhikr'] || 0)); return r > 0 ? `مطلوب 1000 صدقات الأذكار (متبقي: ${r})` : ''; }
-      case 'jawamie': { const r = Math.max(0, 1 - (dhikrCounts['hirz'] || 0)); return r > 0 ? `مطلوب مرة واحدة حرز من الشيطان (متبقي: ${r})` : ''; }
+      case 'milul-mizan': { const r = Math.max(0, 1 - (dhikrCounts['hirz'] || 0)); return r > 0 ? `مطلوب مرة واحدة حرز من الشيطان (متبقي: ${r})` : ''; }
+      case 'sadaqat-dhikr': { const r = Math.max(0, 100 - (dhikrCounts['dhikr_qasr'] || 0)); return r > 0 ? `مطلوب 100 قصر في الجنة (متبقي: ${r})` : ''; }
+      case 'tahlil': { const r = Math.max(0, 300 - (dhikrCounts['sadaqat-dhikr'] || 0)); return r > 0 ? `مطلوب 300 صدقات الأذكار (متبقي: ${r})` : ''; }
+      case 'jawamie': { const r = Math.max(0, 100 - (dhikrCounts['tahlil'] || 0)); return r > 0 ? `مطلوب 100 عتق الرقاب (متبقي: ${r})` : ''; }
       case 'jawahir': { const r = Math.max(0, 33 - (dhikrCounts['jawamie'] || 0)); return r > 0 ? `مطلوب 33 جوامع الكلم (متبقي: ${r})` : ''; }
+      case 'hasbiyallah': { const r = Math.max(0, 10 - (dhikrCounts['jawahir'] || 0)); return r > 0 ? `مطلوب 10 جوهرة الأذكار (متبقي: ${r})` : ''; }
+      case 'hirz': { const r = Math.max(0, 500 - (dhikrCounts['hasbiyallah'] || 0)); return r > 0 ? `مطلوب 500 كفاية الهم (متبقي: ${r})` : ''; }
       default: return '';
     }
   }, [dhikrCounts, stats]);
@@ -740,7 +788,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWirdDate('');
     try {
       await AsyncStorage.multiRemove([
-        'hasanat_total', 'dhikr_counts', 'internal_dhikr_counts',
+        'hasanat_total', 'dhikr_counts', 'internal_dhikr_counts', 'alf_hasana_date', 'hatt_khataya_date',
         'stats_data', 'morning_counts', 'sleep_counts', 'evening_counts',
         'wakeup_counts', 'daily_log', 'daily_goal', 'wird_config',
         'wird_config_version', 'wird_counts', 'wird_date',
@@ -767,7 +815,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEpithetState('');
     setBadges([]);
     setUnlockedCards(['maghfira']);
-    setLastCelebration(null);
+    setCelebrationQueue([]);
+    setAlfHasanaDate('');
     setSoundEnabled(true);
     setVibrationEnabled(true);
     setUseWesternNumerals(true);
@@ -799,10 +848,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         hasanat, dhikrCounts, stats, targetStartDate, userName, showWelcome, level, istiqama,
-        unlockedCards, lastCelebration, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
+        unlockedCards, celebrationQueue, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
         wirdConfig, wirdCounts, wirdDate,
         incrementDhikr, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
-        dismissWelcome, isCardUnlocked, getUnlockRequirement, clearCelebration, rankTitle,
+        dismissWelcome, isCardUnlocked, getUnlockRequirement, clearFirstCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,
         toggleNumeralSystem, isDarkMode, toggleDarkMode, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
         incrementMorningDhikr, completeMorningDhikr, incrementSleepDhikr, completeSleepDhikr,

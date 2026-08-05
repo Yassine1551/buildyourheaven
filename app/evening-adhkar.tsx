@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   PanResponder,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ import { useApp } from '../contexts/AppContext';
 import { eveningAdhkarItems, EveningDhikrItem } from '../services/eveningAdhkar';
 import { calculateAndApplyRewards, getLetterCount } from '../services/rewardEngine';
 import { formatArabicNumber } from '../services/mockData';
+import { buildAdhkarShareMessage } from '../services/shareAdhkar';
 import { theme } from '../constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -204,6 +206,12 @@ export default function EveningAdhkarScreen() {
     setShowDalilModal(true);
   };
 
+  const handleShare = useCallback(() => {
+    Share.share({
+      message: buildAdhkarShareMessage('أذكار المساء', eveningAdhkarItems),
+    });
+  }, []);
+
   const totalCompleted = completedItems.size;
   const totalItems = reversedItems.length;
   const overallProgress = activeIndex !== null ? (totalItems - activeIndex) / totalItems : 0;
@@ -230,9 +238,14 @@ export default function EveningAdhkarScreen() {
             </Text>
           </View>
           <Text style={styles.headerTitle}>أذكار المساء</Text>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
-            <MaterialIcons name="close" size={24} color="#FFF" />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable onPress={handleShare} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
+              <MaterialIcons name="share" size={20} color="#FFF" />
+            </Pressable>
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
+              <MaterialIcons name="close" size={24} color="#FFF" />
+            </Pressable>
+          </View>
         </View>
 
         {/* Progress Bar */}
@@ -498,6 +511,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   overallProgressBar: {
     height: 3,

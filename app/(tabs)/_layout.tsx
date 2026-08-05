@@ -44,20 +44,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'تنبيهات',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="notifications-none" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="badges"
         options={{
           title: 'الأوسمة',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="military-tech" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'تنبيهات',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="notifications-none" size={size} color={color} />
           ),
         }}
       />

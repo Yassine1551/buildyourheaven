@@ -18,6 +18,7 @@ import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { theme } from '../../constants/theme';
+import { ADHKAR_SCHEDULE } from '../../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -41,13 +42,14 @@ interface NotifType {
 }
 
 const initialNotifications: NotifType[] = [
-  { id: '1', title: 'أذكار الصباح', desc: 'فاذكروني أذكركم - حان وقت أذكار الصباح', time: '7:00 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
-  { id: '2', title: 'أذكار المساء', desc: 'فاذكروني أذكركم - حان وقت أذكار المساء', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
-  { id: '3', title: 'أذكار النوم', desc: 'فاذكروني أذكركم - نم على ذكر الله', time: '10:00 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
-  { id: '4', title: 'أذكار الاستيقاظ', desc: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ', time: '6:00 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
+  { id: '1', title: '🌅 أذكار الصباح', desc: 'حان وقت أذكار الصباح، فاذكروني أذكركم', time: '6:25 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
+  { id: '2', title: '🌇 أذكار المساء', desc: 'حان وقت أذكار المساء، اذكر الله يذكرك الله', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
+  { id: '3', title: '🌙 أذكار النوم', desc: 'اختم يومك بعمل صالح - نم على ذكر الله', time: '10:30 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
+  { id: '4', title: '☀️ أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك', time: '5:30 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
+  { id: '5', title: '📿 وردي الخاص', desc: 'حان وقت وردك اليومي، واصل ذكر الله', time: '9:30 صباحاً', icon: 'menu-book', color: '#D4AF37', read: true, route: '/wird' },
 ];
 
-type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup';
+type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup' | 'wird';
 
 // Time labels
 const TIME_RANGES: Record<AlertType, { label: string }> = {
@@ -55,13 +57,15 @@ const TIME_RANGES: Record<AlertType, { label: string }> = {
   evening: { label: 'أذكار المساء' },
   sleep: { label: 'أذكار النوم' },
   wakeup: { label: 'أذكار الاستيقاظ' },
+  wird: { label: 'وردي الخاص' },
 };
 
 const DEFAULT_TIMES: Record<AlertType, { hour: number; minute: number }> = {
-  morning: { hour: 7, minute: 0 },
-  evening: { hour: 17, minute: 0 },
-  sleep: { hour: 22, minute: 0 },
-  wakeup: { hour: 6, minute: 0 },
+  morning: ADHKAR_SCHEDULE.MORNING,
+  evening: ADHKAR_SCHEDULE.EVENING,
+  sleep: ADHKAR_SCHEDULE.SLEEP,
+  wakeup: ADHKAR_SCHEDULE.WAKEUP,
+  wird: ADHKAR_SCHEDULE.WIRD,
 };
 
 function formatTimeDisplay(hour: number, minute: number): string {
@@ -80,12 +84,14 @@ export default function NotificationsScreen() {
   const [eveningEnabled, setEveningEnabled] = useState(true);
   const [sleepEnabled, setSleepEnabled] = useState(true);
   const [wakeupEnabled, setWakeupEnabled] = useState(true);
+  const [wirdEnabled, setWirdEnabled] = useState(true);
 
   // Time settings (hour, minute)
-  const [morningTime, setMorningTime] = useState({ hour: 7, minute: 0 });
-  const [eveningTime, setEveningTime] = useState({ hour: 17, minute: 0 });
-  const [sleepTime, setSleepTime] = useState({ hour: 22, minute: 0 });
-  const [wakeupTime, setWakeupTime] = useState({ hour: 6, minute: 0 });
+  const [morningTime, setMorningTime] = useState({ hour: ADHKAR_SCHEDULE.MORNING.hour, minute: ADHKAR_SCHEDULE.MORNING.minute });
+  const [eveningTime, setEveningTime] = useState({ hour: ADHKAR_SCHEDULE.EVENING.hour, minute: ADHKAR_SCHEDULE.EVENING.minute });
+  const [sleepTime, setSleepTime] = useState({ hour: ADHKAR_SCHEDULE.SLEEP.hour, minute: ADHKAR_SCHEDULE.SLEEP.minute });
+  const [wakeupTime, setWakeupTime] = useState({ hour: ADHKAR_SCHEDULE.WAKEUP.hour, minute: ADHKAR_SCHEDULE.WAKEUP.minute });
+  const [wirdTime, setWirdTime] = useState({ hour: ADHKAR_SCHEDULE.WIRD.hour, minute: ADHKAR_SCHEDULE.WIRD.minute });
 
   // Time picker modal
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -105,7 +111,7 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     scheduleNotifications();
-  }, [morningEnabled, eveningEnabled, sleepEnabled, wakeupEnabled, morningTime, eveningTime, sleepTime, wakeupTime]);
+  }, [morningEnabled, eveningEnabled, sleepEnabled, wakeupEnabled, wirdEnabled, morningTime, eveningTime, sleepTime, wakeupTime, wirdTime]);
 
   const requestPermissions = async () => {
     try {
@@ -126,7 +132,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌅 أذكار الصباح',
-            body: 'فاذكروني أذكركم - حان وقت أذكار الصباح',
+            body: 'حان وقت أذكار الصباح، فاذكروني أذكركم',
             data: { route: '/morning-adhkar' },
             sound: true,
           },
@@ -142,7 +148,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌇 أذكار المساء',
-            body: 'فاذكروني أذكركم - حان وقت أذكار المساء',
+            body: 'حان وقت أذكار المساء، اذكر الله يذكرك الله',
             data: { route: '/evening-adhkar' },
             sound: true,
           },
@@ -158,7 +164,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '☀️ أذكار الاستيقاظ',
-            body: 'فاذكروني أذكركم - ابدأ يومك بأذكار الاستيقاظ',
+            body: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك',
             data: { route: '/wakeup-adhkar' },
             sound: true,
           },
@@ -174,7 +180,7 @@ export default function NotificationsScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌙 أذكار النوم',
-            body: 'فاذكروني أذكركم - نم على ذكر الله',
+            body: 'اختم يومك بعمل صالح - نم على ذكر الله',
             data: { route: '/sleep-adhkar' },
             sound: true,
           },
@@ -182,6 +188,22 @@ export default function NotificationsScreen() {
             type: Notifications.SchedulableTriggerInputTypes.DAILY,
             hour: sleepTime.hour,
             minute: sleepTime.minute,
+          },
+        });
+      }
+
+      if (wirdEnabled) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '📿 وردي الخاص',
+            body: 'حان وقت وردك اليومي، واصل ذكر الله',
+            data: { route: '/wird' },
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: wirdTime.hour,
+            minute: wirdTime.minute,
           },
         });
       }
@@ -205,8 +227,10 @@ export default function NotificationsScreen() {
       h = eveningTime.hour; m = eveningTime.minute;
     } else if (type === 'sleep') {
       h = sleepTime.hour; m = sleepTime.minute;
-    } else {
+    } else if (type === 'wakeup') {
       h = wakeupTime.hour; m = wakeupTime.minute;
+    } else {
+      h = wirdTime.hour; m = wirdTime.minute;
     }
     setTempHour(h);
     setTempMinute(m);
@@ -230,8 +254,10 @@ export default function NotificationsScreen() {
       setEveningTime({ hour, minute });
     } else if (pickerType === 'sleep') {
       setSleepTime({ hour, minute });
-    } else {
+    } else if (pickerType === 'wakeup') {
       setWakeupTime({ hour, minute });
+    } else {
+      setWirdTime({ hour, minute });
     }
     setShowTimePicker(false);
   };
@@ -258,6 +284,8 @@ export default function NotificationsScreen() {
         router.push('/evening-adhkar');
       } else if (notif.route === '/wakeup-adhkar') {
         router.push('/wakeup-adhkar');
+      } else if (notif.route === '/wird') {
+        router.push('/wird');
       } else {
         showAlert(notif.title, 'ستتوفر هذه الشاشة قريباً بإذن الله.');
       }
@@ -408,6 +436,31 @@ export default function NotificationsScreen() {
                 <MaterialIcons name="wb-twilight" size={22} color="#D97706" />
               </View>
             </View>
+
+            <View style={styles.scheduleSep} />
+
+            {/* Wird */}
+            <View style={styles.scheduleRow}>
+              <Switch
+                value={wirdEnabled}
+                onValueChange={setWirdEnabled}
+                trackColor={{ false: '#333', true: '#064E3B' }}
+                thumbColor={wirdEnabled ? '#D4AF37' : '#999'}
+              />
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>وردي الخاص</Text>
+                <Pressable
+                  onPress={() => openTimePicker('wird')}
+                  style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
+                >
+                  <MaterialIcons name="access-time" size={12} color={theme.gold} />
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(wirdTime.hour, wirdTime.minute)} يومياً</Text>
+                </Pressable>
+              </View>
+              <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(212,175,55,0.12)' }]}>
+                <MaterialIcons name="menu-book" size={22} color="#D4AF37" />
+              </View>
+            </View>
           </View>
 
           {/* Notifications History */}
@@ -456,6 +509,32 @@ export default function NotificationsScreen() {
               </Pressable>
             </Animated.View>
           ))}
+
+          {/* Wird Quick Access */}
+          <Pressable
+            onPress={() => router.push('/wird')}
+            style={({ pressed }) => [
+              styles.notifCard,
+              { borderColor: 'rgba(212,175,55,0.2)', backgroundColor: 'rgba(212,175,55,0.04)' },
+              pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <View style={[styles.notifIcon, { backgroundColor: 'rgba(212,175,55,0.12)' }]}>
+              <MaterialIcons name="menu-book" size={22} color="#D4AF37" />
+            </View>
+            <View style={styles.notifContent}>
+              <View style={styles.notifHeader}>
+                <Text style={styles.notifTime}>9:30 صباحاً</Text>
+                <View style={styles.notifTitleRow}>
+                  <Text style={styles.notifTitle}>وردي الخاص</Text>
+                </View>
+              </View>
+              <Text style={styles.notifDesc}>حان وقت وردك اليومي، واصل ذكر الله</Text>
+            </View>
+            <View style={styles.notifChevron}>
+              <MaterialIcons name="chevron-left" size={20} color="rgba(255,255,255,0.25)" />
+            </View>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
 
