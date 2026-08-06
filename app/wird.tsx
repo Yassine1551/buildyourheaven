@@ -292,7 +292,9 @@ export default function WirdScreen() {
                       </View>
 
                       <View style={styles.fadlRow}>
-                        <Text style={styles.fadlText}>وردٌ يومي في طاعة الله، يصفّر مع كل يوم جديد</Text>
+                        <Text style={styles.fadlText} numberOfLines={2}>
+                          {!item.hideFadl && (item.fadl ?? 'وردٌ يومي في طاعة الله، يصفّر مع كل يوم جديد')}
+                        </Text>
                       </View>
 
                       <View style={styles.dhikrTextCard}>
@@ -303,7 +305,42 @@ export default function WirdScreen() {
                           indicatorStyle="white"
                           nestedScrollEnabled
                         >
-                          <Text style={styles.dhikrText}>{item.text}</Text>
+                          {item.keyword ? (
+                            <View style={styles.countedWrapper}>
+                              {item.text.split('،').map((part, i) => {
+                                const trimmed = part.trim();
+                                if (!trimmed) return null;
+                                const isSmall = item.smallText;
+                                const hasKeyword = trimmed.includes(item.keyword!);
+                                const rest = hasKeyword
+                                  ? trimmed.slice(trimmed.indexOf(item.keyword!) + item.keyword!.length)
+                                  : '';
+                                const isShort = rest.length > 0 && rest.length <= 16;
+                                const keywordStyle = isSmall
+                                  ? isShort
+                                    ? styles.countedKeywordXL
+                                    : styles.countedKeywordSmall
+                                  : styles.countedKeyword;
+                                const restStyle = isSmall
+                                  ? isShort
+                                    ? styles.countedRestXL
+                                    : styles.countedRestSmall
+                                  : styles.countedRest;
+                                return (
+                                  <Text key={i} style={styles.countedLine}>
+                                    <Text style={keywordStyle}>
+                                      {hasKeyword ? trimmed.slice(0, trimmed.indexOf(item.keyword!) + item.keyword!.length) : trimmed}
+                                    </Text>
+                                    {hasKeyword && (
+                                      <Text style={restStyle}>{rest}</Text>
+                                    )}
+                                  </Text>
+                                );
+                              })}
+                            </View>
+                          ) : (
+                            <Text style={item.smallText ? styles.dhikrTextSmall : styles.dhikrText}>{item.text}</Text>
+                          )}
                         </ScrollView>
                       </View>
                     </View>
@@ -478,7 +515,7 @@ const styles = StyleSheet.create({
   },
   counterHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 12,
     paddingTop: 4,
@@ -495,6 +532,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     marginHorizontal: 4,
+    height: 82,
+    justifyContent: 'flex-start',
   },
   activeTitle: {
     fontSize: 22,
@@ -502,7 +541,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 30,
+    lineHeight: 28,
   },
   targetIndicator: {
     fontSize: 13,
@@ -510,12 +549,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     writingDirection: 'rtl',
-    marginTop: 4,
+    marginTop: 6,
   },
   fadlRow: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
     marginBottom: 12,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fadlText: {
     fontSize: 14,
@@ -532,18 +573,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
-    minHeight: 80,
+    width: '100%',
   },
   dhikrTextScroll: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
   },
   dhikrTextScrollContent: {
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   dhikrText: {
     fontSize: 24,
@@ -552,6 +593,71 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 38,
+  },
+  dhikrTextSmall: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFF',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    lineHeight: 28,
+  },
+  countedWrapper: {
+    alignSelf: 'stretch',
+    gap: 6,
+    paddingHorizontal: 0,
+  },
+  countedLine: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    width: '100%',
+    lineHeight: 22,
+    paddingHorizontal: 0,
+  },
+  countedKeyword: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4ADE80',
+    writingDirection: 'rtl',
+    lineHeight: 26,
+  },
+  countedRest: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    writingDirection: 'rtl',
+    lineHeight: 26,
+  },
+  countedKeywordSmall: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#4ADE80',
+    writingDirection: 'rtl',
+    lineHeight: 23,
+  },
+  countedRestSmall: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    writingDirection: 'rtl',
+    lineHeight: 23,
+  },
+  countedKeywordXL: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#4ADE80',
+    writingDirection: 'rtl',
+    lineHeight: 24,
+  },
+  countedRestXL: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    writingDirection: 'rtl',
+    lineHeight: 24,
   },
   bottomSection: {
     alignItems: 'center',

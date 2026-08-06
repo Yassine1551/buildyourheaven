@@ -18,7 +18,7 @@ import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { theme } from '../../constants/theme';
-import { ADHKAR_SCHEDULE } from '../../services/adhkarNotifications';
+import { ADHKAR_SCHEDULE, loadNotificationSettings, saveNotificationSettings, scheduleAllAdhkar, AdhkarNotificationSettings, AdhkarType } from '../../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -41,13 +41,13 @@ interface NotifType {
   route?: string;
 }
 
-const initialNotifications: NotifType[] = [
-  { id: '1', title: '🌅 أذكار الصباح', desc: 'حان وقت أذكار الصباح، فاذكروني أذكركم', time: '6:25 صباحاً', icon: 'wb-sunny', color: '#F59E0B', read: false, route: '/morning-adhkar' },
-  { id: '2', title: '🌇 أذكار المساء', desc: 'حان وقت أذكار المساء، اذكر الله يذكرك الله', time: '5:00 مساءً', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
-  { id: '3', title: '🌙 أذكار النوم', desc: 'اختم يومك بعمل صالح - نم على ذكر الله', time: '10:30 مساءً', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
-  { id: '4', title: '☀️ أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك', time: '5:30 صباحاً', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
-  { id: '5', title: '📿 وردي الخاص', desc: 'حان وقت وردك اليومي، واصل ذكر الله', time: '9:30 صباحاً', icon: 'menu-book', color: '#D4AF37', read: true, route: '/wird' },
-];
+const NOTIF_META: Record<AdhkarType, Omit<NotifType, 'time'>> = {
+  wakeup: { id: 'wakeup', title: '☀️ أذكار الاستيقاظ', desc: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك', icon: 'wb-twilight', color: '#D97706', read: true, route: '/wakeup-adhkar' },
+  morning: { id: 'morning', title: '🌅 أذكار الصباح', desc: 'حان وقت أذكار الصباح، فاذكروني أذكركم', icon: 'wb-sunny', color: '#F59E0B', read: true, route: '/morning-adhkar' },
+  evening: { id: 'evening', title: '🌇 أذكار المساء', desc: 'حان وقت أذكار المساء، اذكر الله يذكرك الله', icon: 'nightlight', color: '#8B5CF6', read: true, route: '/evening-adhkar' },
+  sleep: { id: 'sleep', title: '🌙 أذكار النوم', desc: 'اختم يومك بعمل صالح - نم على ذكر الله', icon: 'bedtime', color: '#6366F1', read: true, route: '/sleep-adhkar' },
+  wird: { id: 'wird', title: '📿 وردي الخاص', desc: 'حان وقت وردك اليومي، واصل ذكر الله', icon: 'menu-book', color: '#D4AF37', read: true, route: '/wird' },
+};
 
 type AlertType = 'morning' | 'evening' | 'sleep' | 'wakeup' | 'wird';
 
@@ -79,19 +79,25 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { showAlert } = useAlert();
-  const [notifications, setNotifications] = useState<NotifType[]>(initialNotifications);
-  const [morningEnabled, setMorningEnabled] = useState(true);
-  const [eveningEnabled, setEveningEnabled] = useState(true);
-  const [sleepEnabled, setSleepEnabled] = useState(true);
-  const [wakeupEnabled, setWakeupEnabled] = useState(true);
-  const [wirdEnabled, setWirdEnabled] = useState(true);
-
-  // Time settings (hour, minute)
-  const [morningTime, setMorningTime] = useState({ hour: ADHKAR_SCHEDULE.MORNING.hour, minute: ADHKAR_SCHEDULE.MORNING.minute });
-  const [eveningTime, setEveningTime] = useState({ hour: ADHKAR_SCHEDULE.EVENING.hour, minute: ADHKAR_SCHEDULE.EVENING.minute });
-  const [sleepTime, setSleepTime] = useState({ hour: ADHKAR_SCHEDULE.SLEEP.hour, minute: ADHKAR_SCHEDULE.SLEEP.minute });
-  const [wakeupTime, setWakeupTime] = useState({ hour: ADHKAR_SCHEDULE.WAKEUP.hour, minute: ADHKAR_SCHEDULE.WAKEUP.minute });
-  const [wirdTime, setWirdTime] = useState({ hour: ADHKAR_SCHEDULE.WIRD.hour, minute: ADHKAR_SCHEDULE.WIRD.minute });
+  const [readIds, setReadIds] = useState<string[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [settings, setSettings] = useState<AdhkarNotificationSettings>({
+    enabled: {
+      wakeup: true,
+      morning: true,
+      evening: true,
+      sleep: true,
+      wird: true,
+    },
+    times: {
+      wakeup: { ...ADHKAR_SCHEDULE.WAKEUP },
+      morning: { ...ADHKAR_SCHEDULE.MORNING },
+      evening: { ...ADHKAR_SCHEDULE.EVENING },
+      sleep: { ...ADHKAR_SCHEDULE.SLEEP },
+      wird: { ...ADHKAR_SCHEDULE.WIRD },
+    },
+  });
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Time picker modal
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -107,11 +113,17 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     requestPermissions();
+    loadNotificationSettings().then((saved) => {
+      setSettings(saved);
+      setSettingsLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
-    scheduleNotifications();
-  }, [morningEnabled, eveningEnabled, sleepEnabled, wakeupEnabled, wirdEnabled, morningTime, eveningTime, sleepTime, wakeupTime, wirdTime]);
+    if (!settingsLoaded) return;
+    scheduleAllAdhkar(settings).catch(() => {});
+    saveNotificationSettings(settings);
+  }, [settings, settingsLoaded]);
 
   const requestPermissions = async () => {
     try {
@@ -124,94 +136,6 @@ export default function NotificationsScreen() {
     }
   };
 
-  const scheduleNotifications = async () => {
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-
-      if (morningEnabled) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌅 أذكار الصباح',
-            body: 'حان وقت أذكار الصباح، فاذكروني أذكركم',
-            data: { route: '/morning-adhkar' },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: morningTime.hour,
-            minute: morningTime.minute,
-          },
-        });
-      }
-
-      if (eveningEnabled) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌇 أذكار المساء',
-            body: 'حان وقت أذكار المساء، اذكر الله يذكرك الله',
-            data: { route: '/evening-adhkar' },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: eveningTime.hour,
-            minute: eveningTime.minute,
-          },
-        });
-      }
-
-      if (wakeupEnabled) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '☀️ أذكار الاستيقاظ',
-            body: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك',
-            data: { route: '/wakeup-adhkar' },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: wakeupTime.hour,
-            minute: wakeupTime.minute,
-          },
-        });
-      }
-
-      if (sleepEnabled) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌙 أذكار النوم',
-            body: 'اختم يومك بعمل صالح - نم على ذكر الله',
-            data: { route: '/sleep-adhkar' },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: sleepTime.hour,
-            minute: sleepTime.minute,
-          },
-        });
-      }
-
-      if (wirdEnabled) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '📿 وردي الخاص',
-            body: 'حان وقت وردك اليومي، واصل ذكر الله',
-            data: { route: '/wird' },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: wirdTime.hour,
-            minute: wirdTime.minute,
-          },
-        });
-      }
-    } catch (e) {
-      // Silent fail - notifications are nice-to-have
-    }
-  };
-
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setToastVisible(true);
@@ -220,22 +144,11 @@ export default function NotificationsScreen() {
 
   const openTimePicker = (type: AlertType) => {
     setPickerType(type);
-    let h = 7, m = 0;
-    if (type === 'morning') {
-      h = morningTime.hour; m = morningTime.minute;
-    } else if (type === 'evening') {
-      h = eveningTime.hour; m = eveningTime.minute;
-    } else if (type === 'sleep') {
-      h = sleepTime.hour; m = sleepTime.minute;
-    } else if (type === 'wakeup') {
-      h = wakeupTime.hour; m = wakeupTime.minute;
-    } else {
-      h = wirdTime.hour; m = wirdTime.minute;
-    }
-    setTempHour(h);
-    setTempMinute(m);
-    setTempHourStr(String(h));
-    setTempMinuteStr(String(m).padStart(2, '0'));
+    const t = settings.times[type as AdhkarType];
+    setTempHour(t.hour);
+    setTempMinute(t.minute);
+    setTempHourStr(String(t.hour));
+    setTempMinuteStr(String(t.minute).padStart(2, '0'));
     setShowTimePicker(true);
   };
 
@@ -248,17 +161,10 @@ export default function NotificationsScreen() {
       return;
     }
 
-    if (pickerType === 'morning') {
-      setMorningTime({ hour, minute });
-    } else if (pickerType === 'evening') {
-      setEveningTime({ hour, minute });
-    } else if (pickerType === 'sleep') {
-      setSleepTime({ hour, minute });
-    } else if (pickerType === 'wakeup') {
-      setWakeupTime({ hour, minute });
-    } else {
-      setWirdTime({ hour, minute });
-    }
+    setSettings(prev => ({
+      ...prev,
+      times: { ...prev.times, [pickerType as AdhkarType]: { hour, minute } },
+    }));
     setShowTimePicker(false);
   };
 
@@ -272,9 +178,7 @@ export default function NotificationsScreen() {
   };
 
   const handleNotifPress = (notif: NotifType) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === notif.id ? { ...n, read: true } : n)
-    );
+    setReadIds(prev => prev.includes(notif.id) ? prev : [...prev, notif.id]);
     if (notif.route) {
       if (notif.route === '/morning-adhkar') {
         router.push('/morning-adhkar');
@@ -293,14 +197,26 @@ export default function NotificationsScreen() {
   };
 
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setReadIds(todayNotifs.map(n => n.id));
   };
 
   const handleDismiss = (notifId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    setDismissedIds(prev => prev.includes(notifId) ? prev : [...prev, notifId]);
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const todayNotifs = (Object.keys(NOTIF_META) as AdhkarType[])
+    .filter((type) => settings.enabled[type] && !dismissedIds.includes(type))
+    .map((type) => {
+      const t = settings.times[type];
+      const { hour, minute } = t;
+      const meta = NOTIF_META[type];
+      const period = hour >= 12 ? 'مساءً' : 'صباحاً';
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+      const displayMin = minute.toString().padStart(2, '0');
+      return { ...meta, time: `${displayHour}:${displayMin} ${period}`, read: readIds.includes(type) };
+    });
+
+  const unreadCount = todayNotifs.filter((n) => !n.read).length;
 
   return (
     <View style={styles.container}>
@@ -342,10 +258,10 @@ export default function NotificationsScreen() {
             {/* Morning */}
             <View style={styles.scheduleRow}>
               <Switch
-                value={morningEnabled}
-                onValueChange={setMorningEnabled}
+                value={settings.enabled.morning}
+                onValueChange={(v) => setSettings(prev => ({ ...prev, enabled: { ...prev.enabled, morning: v } }))}
                 trackColor={{ false: '#333', true: '#064E3B' }}
-                thumbColor={morningEnabled ? '#D4AF37' : '#999'}
+                thumbColor={settings.enabled.morning ? '#D4AF37' : '#999'}
               />
               <View style={styles.scheduleInfo}>
                 <Text style={styles.scheduleLabel}>أذكار الصباح</Text>
@@ -354,7 +270,7 @@ export default function NotificationsScreen() {
                   style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
                 >
                   <MaterialIcons name="access-time" size={12} color={theme.gold} />
-                  <Text style={styles.timeBtnText}>{formatTimeDisplay(morningTime.hour, morningTime.minute)} يومياً</Text>
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(settings.times.morning.hour, settings.times.morning.minute)} يومياً</Text>
                 </Pressable>
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
@@ -367,10 +283,10 @@ export default function NotificationsScreen() {
             {/* Evening */}
             <View style={styles.scheduleRow}>
               <Switch
-                value={eveningEnabled}
-                onValueChange={setEveningEnabled}
+                value={settings.enabled.evening}
+                onValueChange={(v) => setSettings(prev => ({ ...prev, enabled: { ...prev.enabled, evening: v } }))}
                 trackColor={{ false: '#333', true: '#064E3B' }}
-                thumbColor={eveningEnabled ? '#D4AF37' : '#999'}
+                thumbColor={settings.enabled.evening ? '#D4AF37' : '#999'}
               />
               <View style={styles.scheduleInfo}>
                 <Text style={styles.scheduleLabel}>أذكار المساء</Text>
@@ -379,7 +295,7 @@ export default function NotificationsScreen() {
                   style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
                 >
                   <MaterialIcons name="access-time" size={12} color={theme.gold} />
-                  <Text style={styles.timeBtnText}>{formatTimeDisplay(eveningTime.hour, eveningTime.minute)} يومياً</Text>
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(settings.times.evening.hour, settings.times.evening.minute)} يومياً</Text>
                 </Pressable>
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
@@ -392,10 +308,10 @@ export default function NotificationsScreen() {
             {/* Sleep */}
             <View style={styles.scheduleRow}>
               <Switch
-                value={sleepEnabled}
-                onValueChange={setSleepEnabled}
+                value={settings.enabled.sleep}
+                onValueChange={(v) => setSettings(prev => ({ ...prev, enabled: { ...prev.enabled, sleep: v } }))}
                 trackColor={{ false: '#333', true: '#064E3B' }}
-                thumbColor={sleepEnabled ? '#D4AF37' : '#999'}
+                thumbColor={settings.enabled.sleep ? '#D4AF37' : '#999'}
               />
               <View style={styles.scheduleInfo}>
                 <Text style={styles.scheduleLabel}>أذكار النوم</Text>
@@ -404,7 +320,7 @@ export default function NotificationsScreen() {
                   style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
                 >
                   <MaterialIcons name="access-time" size={12} color={theme.gold} />
-                  <Text style={styles.timeBtnText}>{formatTimeDisplay(sleepTime.hour, sleepTime.minute)} يومياً</Text>
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(settings.times.sleep.hour, settings.times.sleep.minute)} يومياً</Text>
                 </Pressable>
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(99,102,241,0.12)' }]}>
@@ -417,10 +333,10 @@ export default function NotificationsScreen() {
             {/* Wakeup */}
             <View style={styles.scheduleRow}>
               <Switch
-                value={wakeupEnabled}
-                onValueChange={setWakeupEnabled}
+                value={settings.enabled.wakeup}
+                onValueChange={(v) => setSettings(prev => ({ ...prev, enabled: { ...prev.enabled, wakeup: v } }))}
                 trackColor={{ false: '#333', true: '#064E3B' }}
-                thumbColor={wakeupEnabled ? '#D4AF37' : '#999'}
+                thumbColor={settings.enabled.wakeup ? '#D4AF37' : '#999'}
               />
               <View style={styles.scheduleInfo}>
                 <Text style={styles.scheduleLabel}>أذكار الاستيقاظ</Text>
@@ -429,7 +345,7 @@ export default function NotificationsScreen() {
                   style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
                 >
                   <MaterialIcons name="access-time" size={12} color={theme.gold} />
-                  <Text style={styles.timeBtnText}>{formatTimeDisplay(wakeupTime.hour, wakeupTime.minute)} يومياً</Text>
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(settings.times.wakeup.hour, settings.times.wakeup.minute)} يومياً</Text>
                 </Pressable>
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(217,119,6,0.12)' }]}>
@@ -442,10 +358,10 @@ export default function NotificationsScreen() {
             {/* Wird */}
             <View style={styles.scheduleRow}>
               <Switch
-                value={wirdEnabled}
-                onValueChange={setWirdEnabled}
+                value={settings.enabled.wird}
+                onValueChange={(v) => setSettings(prev => ({ ...prev, enabled: { ...prev.enabled, wird: v } }))}
                 trackColor={{ false: '#333', true: '#064E3B' }}
-                thumbColor={wirdEnabled ? '#D4AF37' : '#999'}
+                thumbColor={settings.enabled.wird ? '#D4AF37' : '#999'}
               />
               <View style={styles.scheduleInfo}>
                 <Text style={styles.scheduleLabel}>وردي الخاص</Text>
@@ -454,7 +370,7 @@ export default function NotificationsScreen() {
                   style={({ pressed }) => [styles.timeBtn, pressed && { opacity: 0.6 }]}
                 >
                   <MaterialIcons name="access-time" size={12} color={theme.gold} />
-                  <Text style={styles.timeBtnText}>{formatTimeDisplay(wirdTime.hour, wirdTime.minute)} يومياً</Text>
+                  <Text style={styles.timeBtnText}>{formatTimeDisplay(settings.times.wird.hour, settings.times.wird.minute)} يومياً</Text>
                 </Pressable>
               </View>
               <View style={[styles.scheduleIconCircle, { backgroundColor: 'rgba(212,175,55,0.12)' }]}>
@@ -466,14 +382,14 @@ export default function NotificationsScreen() {
           {/* Notifications History */}
           <Text style={styles.sectionTitle}>سجل التنبيهات</Text>
 
-          {notifications.length === 0 ? (
+          {todayNotifs.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="notifications-none" size={48} color={theme.textMuted} />
               <Text style={styles.emptyText}>لا توجد تنبيهات</Text>
             </View>
           ) : null}
 
-          {notifications.map((item, index) => (
+          {todayNotifs.map((item, index) => (
             <Animated.View key={item.id} entering={FadeInDown.delay(index * 80).duration(400)} exiting={FadeOut.duration(300)}>
               <Pressable
                 onPress={() => handleNotifPress(item)}
@@ -509,32 +425,6 @@ export default function NotificationsScreen() {
               </Pressable>
             </Animated.View>
           ))}
-
-          {/* Wird Quick Access */}
-          <Pressable
-            onPress={() => router.push('/wird')}
-            style={({ pressed }) => [
-              styles.notifCard,
-              { borderColor: 'rgba(212,175,55,0.2)', backgroundColor: 'rgba(212,175,55,0.04)' },
-              pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <View style={[styles.notifIcon, { backgroundColor: 'rgba(212,175,55,0.12)' }]}>
-              <MaterialIcons name="menu-book" size={22} color="#D4AF37" />
-            </View>
-            <View style={styles.notifContent}>
-              <View style={styles.notifHeader}>
-                <Text style={styles.notifTime}>9:30 صباحاً</Text>
-                <View style={styles.notifTitleRow}>
-                  <Text style={styles.notifTitle}>وردي الخاص</Text>
-                </View>
-              </View>
-              <Text style={styles.notifDesc}>حان وقت وردك اليومي، واصل ذكر الله</Text>
-            </View>
-            <View style={styles.notifChevron}>
-              <MaterialIcons name="chevron-left" size={20} color="rgba(255,255,255,0.25)" />
-            </View>
-          </Pressable>
         </ScrollView>
       </SafeAreaView>
 

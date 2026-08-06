@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
-import { useEffect } from 'react';
 import { AppState } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NOTIFICATION_IDS = {
   WAKEUP: 'wakeup_adhkar',
@@ -18,6 +18,55 @@ export const ADHKAR_SCHEDULE = {
   WIRD: { hour: 9, minute: 30 },
 };
 
+export type AdhkarType = 'morning' | 'evening' | 'sleep' | 'wakeup' | 'wird';
+
+export interface AdhkarNotificationSettings {
+  enabled: Record<AdhkarType, boolean>;
+  times: Record<AdhkarType, { hour: number; minute: number }>;
+}
+
+const STORAGE_KEY = 'adhkar_notif_settings';
+
+export const DEFAULT_SETTINGS: AdhkarNotificationSettings = {
+  enabled: {
+    wakeup: true,
+    morning: true,
+    evening: true,
+    sleep: true,
+    wird: true,
+  },
+  times: {
+    wakeup: { ...ADHKAR_SCHEDULE.WAKEUP },
+    morning: { ...ADHKAR_SCHEDULE.MORNING },
+    evening: { ...ADHKAR_SCHEDULE.EVENING },
+    sleep: { ...ADHKAR_SCHEDULE.SLEEP },
+    wird: { ...ADHKAR_SCHEDULE.WIRD },
+  },
+};
+
+export async function loadNotificationSettings(): Promise<AdhkarNotificationSettings> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_SETTINGS;
+    const parsed = JSON.parse(raw);
+    const merged: AdhkarNotificationSettings = {
+      enabled: { ...DEFAULT_SETTINGS.enabled, ...parsed.enabled },
+      times: { ...DEFAULT_SETTINGS.times, ...parsed.times },
+    };
+    return merged;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export async function saveNotificationSettings(settings: AdhkarNotificationSettings): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // silent
+  }
+}
+
 export function getAdhkarSlotAt(hour: number, minute: number): 'morning' | 'evening' | 'sleep' | 'wakeup' | null {
   const minutes = hour * 60 + minute;
   const toMin = (h: number, m: number) => h * 60 + m;
@@ -33,96 +82,49 @@ export function getAdhkarSlotAt(hour: number, minute: number): 'morning' | 'even
   return null;
 }
 
-export async function purgeOldNotifications() {
+const SCHEDULE_CONTENT: Record<AdhkarType, { identifier: string; title: string; body: string; route: string }> = {
+  wakeup: { identifier: NOTIFICATION_IDS.WAKEUP, title: '☀️ أذكار الاستيقاظ', body: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك', route: '/wakeup-adhkar' },
+  morning: { identifier: NOTIFICATION_IDS.MORNING, title: '🌅 أذكار الصباح', body: 'حان وقت أذكار الصباح، فاذكروني أذكركم', route: '/morning-adhkar' },
+  evening: { identifier: NOTIFICATION_IDS.EVENING, title: '🌇 أذكار المساء', body: 'حان وقت أذكار المساء، اذكر الله يذكرك الله', route: '/evening-adhkar' },
+  sleep: { identifier: NOTIFICATION_IDS.SLEEP, title: '🌙 أذكار النوم', body: 'اختم يومك بعمل صالح - نم على ذكر الله', route: '/sleep-adhkar' },
+  wird: { identifier: NOTIFICATION_IDS.WIRD, title: '📿 وردي الخاص', body: 'حان وقت وردك اليومي، واصل ذكر الله', route: '/wird' },
+};
+
+export async function scheduleAllAdhkar(settings: AdhkarNotificationSettings) {
   await Notifications.cancelAllScheduledNotificationsAsync();
-}
 
-export async function scheduleAllAdhkar() {
-  await purgeOldNotifications();
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_IDS.WAKEUP,
-    content: {
-      title: '☀️ أذكار الاستيقاظ',
-      body: 'استيقظت؟ ابدأ يومك بذكر الله، اذكره ليذكرك',
-      data: { route: '/wakeup-adhkar' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: ADHKAR_SCHEDULE.WAKEUP.hour,
-      minute: ADHKAR_SCHEDULE.WAKEUP.minute,
-    },
-  });
+  const types: AdhkarType[] = ['wakeup', 'morning', 'evening', 'sleep', 'wird'];
 
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_IDS.MORNING,
-    content: {
-      title: '🌅 أذكار الصباح',
-      body: 'حان وقت أذكار الصباح، فاذكروني أذكركم',
-      data: { route: '/morning-adhkar' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: ADHKAR_SCHEDULE.MORNING.hour,
-      minute: ADHKAR_SCHEDULE.MORNING.minute,
-    },
-  });
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_IDS.EVENING,
-    content: {
-      title: '🌇 أذكار المساء',
-      body: 'حان وقت أذكار المساء، اذكر الله يذكرك الله',
-      data: { route: '/evening-adhkar' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: ADHKAR_SCHEDULE.EVENING.hour,
-      minute: ADHKAR_SCHEDULE.EVENING.minute,
-    },
-  });
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_IDS.SLEEP,
-    content: {
-      title: '🌙 أذكار النوم',
-      body: 'اختم يومك بعمل صالح - نم على ذكر الله',
-      data: { route: '/sleep-adhkar' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: ADHKAR_SCHEDULE.SLEEP.hour,
-      minute: ADHKAR_SCHEDULE.SLEEP.minute,
-    },
-  });
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_IDS.WIRD,
-    content: {
-      title: '📿 وردي الخاص',
-      body: 'حان وقت وردك اليومي، واصل ذكر الله',
-      data: { route: '/wird' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: ADHKAR_SCHEDULE.WIRD.hour,
-      minute: ADHKAR_SCHEDULE.WIRD.minute,
-    },
-  });
+  for (const type of types) {
+    if (!settings.enabled[type]) continue;
+    const { identifier, title, body, route } = SCHEDULE_CONTENT[type];
+    const { hour, minute } = settings.times[type];
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title, body, sound: true, data: { route } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      },
+    });
+  }
 }
 
 export async function clearExpiredNotifications() {
-  const currentHour = new Date().getHours();
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync();
+    const now = Date.now();
+    const staleMs = 10 * 60 * 60 * 1000;
 
-  if (currentHour >= 3 && currentHour < 4) {
-    await Notifications.dismissAllNotificationsAsync();
-    return;
-  }
-
-  if (currentHour >= 11) {
-    await Notifications.dismissNotificationAsync(NOTIFICATION_IDS.WAKEUP);
-  }
-
-  if (currentHour >= 13) {
-    await Notifications.dismissNotificationAsync(NOTIFICATION_IDS.MORNING);
+    for (const notification of presented) {
+      const deliveredAt = notification.date;
+      if (!deliveredAt) continue;
+      if (now - deliveredAt > staleMs) {
+        await Notifications.dismissNotificationAsync(notification.request.identifier);
+      }
+    }
+  } catch {
+    // silent
   }
 }

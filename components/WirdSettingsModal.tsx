@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  UIManager,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +30,14 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
   const [newText, setNewText] = useState('');
   const [newTarget, setNewTarget] = useState('100');
   const [draftTargets, setDraftTargets] = useState<Record<string, string>>({});
+  const [draftOrders, setDraftOrders] = useState<Record<string, string>>({});
+  const scrollRef = useRef<ScrollView | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -71,6 +80,38 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
     );
   };
 
+  const moveItem = (id: string, dir: -1 | 1) => {
+    setLocalItems(prev => {
+      const idx = prev.findIndex(i => i.id === id);
+      const target = idx + dir;
+      if (idx < 0 || target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+  };
+
+  const jumpToOrder = (id: string) => {
+    const draft = (draftOrders[id] || '').replace(/[^0-9]/g, '');
+    const parsed = parseInt(draft, 10);
+    setDraftOrders(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (isNaN(parsed) || parsed < 1) return;
+    const target = Math.min(parsed - 1, localItems.length - 1);
+    setLocalItems(prev => {
+      const idx = prev.findIndex(i => i.id === id);
+      if (idx < 0 || target === idx) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+  };
+
   const handleAdd = () => {
     const text = newText.trim();
     if (!text) return;
@@ -94,6 +135,11 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
   };
 
   const enabledCount = localItems.filter(i => i.enabled).length;
+
+  const toggleAll = () => {
+    const allEnabled = localItems.every(i => i.enabled);
+    setLocalItems(prev => prev.map(i => ({ ...i, enabled: !allEnabled })));
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
@@ -120,79 +166,129 @@ export default function WirdSettingsModal({ visible, onClose }: WirdSettingsModa
               </Pressable>
             </View>
 
-            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.scroll}
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.hint}>
                 عدادك اليومي يتصفّر تلقائياً مع بداية كل يوم جديد. فعّل ما تريد ومَن أراد الزيادة فليزد.
               </Text>
 
-              {localItems.map(item => (
+              <View style={styles.reorderHintRow}>
+                <Text style={styles.reorderHintText}>
+                  غيّر ترتيب أذكارك بحرّية: استخدم الأسهم أو اكتب رقم الترتيب مباشرة.
+                </Text>
+                <MaterialIcons name="drag-indicator" size={18} color={theme.gold} />
+              </View>
+
+              <Pressable
+                onPress={toggleAll}
+                style={({ pressed }) => [styles.selectAllBtn, pressed && { opacity: 0.7 }]}
+              >
+                <MaterialIcons
+                  name={localItems.every(i => i.enabled) ? 'check-box' : 'check-box-outline-blank'}
+                  size={18}
+                  color={theme.gold}
+                />
+                <Text style={styles.selectAllText}>
+                  {localItems.every(i => i.enabled) ? 'إلغاء تحديد الكل' : 'اختيار الكل'}
+                </Text>
+              </Pressable>
+
+              {localItems.map((item, index) => (
                 <View key={item.id} style={styles.itemCard}>
-                  <View style={styles.itemRow}>
-                    <View style={styles.progressCol}>
-                      <Text style={styles.progressText}>
-                        {wirdCounts[item.id] || 0}/{item.target}
-                      </Text>
-                      <Text style={styles.progressLabel}>اليوم</Text>
-                    </View>
-                    <View style={styles.itemInfo}>
-                      <Text style={[styles.itemText, !item.enabled && styles.itemTextOff]}>{item.text}</Text>
-                      {item.custom ? (
-                        <Pressable
-                          onPress={() => removeItem(item.id)}
-                          style={({ pressed }) => [styles.customBadge, pressed && { opacity: 0.6 }]}
-                        >
-                          <MaterialIcons name="delete-outline" size={12} color="#EF4444" />
-                          <Text style={styles.customBadgeText}>حذف</Text>
-                        </Pressable>
-                      ) : item.syncTarget === 'multi_qasr_khatma' ? (
-                        <View style={styles.rewardBadge}>
-                          <MaterialIcons name="castle" size={12} color={theme.gold} />
-                          <Text style={styles.rewardBadgeText}>عند إتمامها: قصر في الجنة + 3 ختمات</Text>
-                        </View>
-                      ) : (
-                        <Text style={styles.itemSub}>من أذكار الوِرد</Text>
-                      )}
-                    </View>
-                    <Switch
-                      value={item.enabled}
-                      onValueChange={v => updateItem(item.id, { enabled: v })}
-                      trackColor={{ false: '#333', true: '#0D7A5F' }}
-                      thumbColor={item.enabled ? theme.gold : '#999'}
-                    />
-                  </View>
-                  <View style={styles.stepperRow}>
-                    <Pressable
-                      onPress={() => adjustTarget(item.id, -10)}
-                      style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}
-                    >
-                      <MaterialIcons name="remove" size={18} color={theme.gold} />
-                    </Pressable>
-                    <View style={styles.stepValueBox}>
+                  <View style={styles.cardMain}>
+                    <View style={styles.reorderCol}>
+                      <Pressable
+                        onPress={() => moveItem(item.id, -1)}
+                        disabled={index === 0}
+                        style={({ pressed }) => [styles.reorderBtn, (index === 0 || pressed) && styles.reorderBtnDim]}
+                      >
+                        <MaterialIcons name="keyboard-arrow-up" size={16} color={theme.gold} />
+                      </Pressable>
                       <TextInput
-                        style={styles.stepValueInput}
-                        value={draftTargets[item.id] ?? String(item.target)}
-                        onChangeText={t => {
-                          const sanitized = t.replace(/[^0-9]/g, '');
-                          setDraftTargets(prev => ({ ...prev, [item.id]: sanitized }));
-                          const parsed = parseInt(sanitized, 10);
-                          if (!isNaN(parsed) && parsed >= 1 && parsed <= 5000) {
-                            updateItem(item.id, { target: parsed });
-                          }
-                        }}
-                        onBlur={() => commitTarget(item.id)}
+                        style={styles.orderInput}
+                        value={draftOrders[item.id] ?? String(index + 1)}
+                        onChangeText={t => setDraftOrders(prev => ({ ...prev, [item.id]: t.replace(/[^0-9]/g, '') }))}
+                        onBlur={() => jumpToOrder(item.id)}
                         keyboardType="number-pad"
-                        maxLength={4}
+                        maxLength={2}
                         textAlign="center"
                         keyboardAppearance="dark"
                       />
+                      <Pressable
+                        onPress={() => moveItem(item.id, 1)}
+                        disabled={index === localItems.length - 1}
+                        style={({ pressed }) => [styles.reorderBtn, (index === localItems.length - 1 || pressed) && styles.reorderBtnDim]}
+                      >
+                        <MaterialIcons name="keyboard-arrow-down" size={16} color={theme.gold} />
+                      </Pressable>
                     </View>
-                    <Pressable
-                      onPress={() => adjustTarget(item.id, 10)}
-                      style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}
-                    >
-                      <MaterialIcons name="add" size={18} color={theme.gold} />
-                    </Pressable>
-                    <Text style={styles.stepLabel}>العدد المنشود</Text>
+                    <View style={styles.cardBody}>
+                      <View style={styles.itemRow}>
+                        <View style={styles.progressCol}>
+                          <Text style={styles.progressText}>
+                            {wirdCounts[item.id] || 0}/{item.target}
+                          </Text>
+                          <Text style={styles.progressLabel}>اليوم</Text>
+                        </View>
+                        <View style={styles.itemInfo}>
+                          <Text style={[styles.itemText, !item.enabled && styles.itemTextOff]}>{item.title}</Text>
+                          {item.custom && (
+                            <Pressable
+                              onPress={() => removeItem(item.id)}
+                              style={({ pressed }) => [styles.customBadge, pressed && { opacity: 0.6 }]}
+                            >
+                              <MaterialIcons name="delete-outline" size={12} color="#EF4444" />
+                              <Text style={styles.customBadgeText}>حذف</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                        <Switch
+                          value={item.enabled}
+                          onValueChange={v => updateItem(item.id, { enabled: v })}
+                          trackColor={{ false: '#333', true: '#0D7A5F' }}
+                          thumbColor={item.enabled ? theme.gold : '#999'}
+                        />
+                      </View>
+                      <View style={styles.stepperRow}>
+                        <View style={styles.targetCluster}>
+                          <Pressable
+                            onPress={() => adjustTarget(item.id, -10)}
+                            style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}
+                          >
+                            <MaterialIcons name="remove" size={18} color={theme.gold} />
+                          </Pressable>
+                          <View style={styles.stepValueBox}>
+                            <TextInput
+                              style={styles.stepValueInput}
+                              value={draftTargets[item.id] ?? String(item.target)}
+                              onChangeText={t => {
+                                const sanitized = t.replace(/[^0-9]/g, '');
+                                setDraftTargets(prev => ({ ...prev, [item.id]: sanitized }));
+                                const parsed = parseInt(sanitized, 10);
+                                if (!isNaN(parsed) && parsed >= 1 && parsed <= 5000) {
+                                  updateItem(item.id, { target: parsed });
+                                }
+                              }}
+                              onBlur={() => commitTarget(item.id)}
+                              keyboardType="number-pad"
+                              maxLength={4}
+                              textAlign="center"
+                              keyboardAppearance="dark"
+                            />
+                          </View>
+                          <Pressable
+                            onPress={() => adjustTarget(item.id, 10)}
+                            style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}
+                          >
+                            <MaterialIcons name="add" size={18} color={theme.gold} />
+                          </Pressable>
+                          <Text style={styles.stepLabel}>العدد المنشود</Text>
+                        </View>
+                      </View>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -320,7 +416,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,175,55,0.35)',
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: '#FFF',
     writingDirection: 'rtl',
@@ -329,28 +425,76 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   hint: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.55)',
     writingDirection: 'rtl',
     textAlign: 'right',
-    lineHeight: 18,
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  reorderHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(212,175,55,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.25)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     marginBottom: 14,
+    writingDirection: 'rtl',
+  },
+  reorderHintText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    writingDirection: 'rtl',
+    textAlign: 'right',
+    lineHeight: 20,
+  },
+  selectAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.35)',
+    backgroundColor: 'rgba(212,175,55,0.08)',
+    marginBottom: 12,
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.gold,
+    writingDirection: 'rtl',
   },
   itemCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(212,175,55,0.2)',
-    padding: 14,
-    marginBottom: 12,
+    padding: 10,
+    marginBottom: 10,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  cardMain: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: 10,
   },
-  itemInfo: {
+  cardBody: {
+    flex: 1,
+  },  itemInfo: {
     flex: 1,
     alignItems: 'flex-end',
     gap: 4,
@@ -365,12 +509,6 @@ const styles = StyleSheet.create({
   itemTextOff: {
     color: 'rgba(255,255,255,0.35)',
   },
-  itemSub: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.4)',
-    writingDirection: 'rtl',
-  },
   customBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -384,21 +522,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#EF4444',
-  },
-  rewardBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: 'rgba(212,175,55,0.12)',
-  },
-  rewardBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: theme.gold,
-    writingDirection: 'rtl',
   },
   progressCol: {
     alignItems: 'center',
@@ -419,16 +542,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.45)',
   },
-  stepperRow: {
+stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
+    marginTop: 8,
+    justifyContent: 'flex-end',
+    gap: 6,
+    marginRight: 12,
+  },
+  targetCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   stepBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(212,175,55,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(212,175,55,0.25)',
@@ -436,9 +566,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepValueBox: {
-    width: 112,
-    height: 34,
-    borderRadius: 12,
+    width: 66,
+    height: 28,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(212,175,55,0.35)',
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -456,6 +586,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.45)',
     writingDirection: 'rtl',
+  },
+  reorderCol: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+  },
+  reorderBtn: {
+    width: 28,
+    height: 26,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212,175,55,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reorderBtnDim: {
+    opacity: 0.3,
+  },
+  orderInput: {
+    width: 24,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.4)',
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '800',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   addNewBtn: {
     flexDirection: 'row',

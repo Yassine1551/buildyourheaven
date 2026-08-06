@@ -34,7 +34,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   hasPrev: boolean;
 }) {
   const [showStrategy, setShowStrategy] = useState(false);
-  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 16 : item.id === '10' ? 16.5 : item.id === '13' ? 16 : item.id === '14' ? 17 : 18);
+  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '18b' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : 18);
   const [readingPhase, setReadingPhase] = useState<'natharan' | 'ghayban' | 'complete'>('natharan');
   const [readingCount, setReadingCount] = useState(0);
   const nextUnlocked = readingPhase === 'complete' || isMemorized;
@@ -66,7 +66,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   useEffect(() => {
     setReadingPhase('natharan');
     setReadingCount(0);
-    setFontSize(item.id === '9' ? 16 : item.id === '10' ? 16.5 : item.id === '13' ? 16 : item.id === '14' ? 17 : 18);
+    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '18b' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : 18);
   }, [item.id]);
 
   return (
@@ -141,7 +141,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
                   showsVerticalScrollIndicator={false}
                   nestedScrollEnabled
                 >
-                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: fontSize + 22 }]}>{item.verses}</Text>
+                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '19' ? 18 : item.id === '24' ? 14 : item.id === '25' ? 18 : 22)) }]}>{item.verses}</Text>
                 </ScrollView>
               </View>
 
@@ -714,7 +714,8 @@ const styles = StyleSheet.create({
   modalVersesWrap: {
     flex: 1,
     marginTop: 10,
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
     paddingHorizontal: 8,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
@@ -729,12 +730,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   modalVirtueWrap: {
-    marginTop: 4,
+    marginTop: 2,
   },
   modalVirtueDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    marginVertical: 16,
+    marginVertical: 8,
   },
   modalVirtueLabel: {
     fontSize: 12,

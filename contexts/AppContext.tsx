@@ -259,7 +259,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const savedById = new Map(parsed.map(s => [s.id, s]));
             const merged: WirdDhikrItem[] = DEFAULT_WIRD_ITEMS.map(def => {
               const saved = savedById.get(def.id);
-              return saved ? { ...saved, title: def.title, text: def.text } : { ...def };
+              return saved
+                ? {
+                    ...saved,
+                    enabled: saved.enabled ?? def.enabled,
+                    title: def.title,
+                    text: def.text,
+                    fadl: def.fadl,
+                    hideFadl: def.hideFadl,
+                    smallText: def.smallText,
+                    keyword: def.keyword,
+                  }
+                : { ...def };
             });
             parsed.filter(s => !defById.has(s.id)).forEach(s => merged.push(s));
             setWirdConfig(merged);

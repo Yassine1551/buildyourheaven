@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AlertProvider } from '@/template';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from '../contexts/AppContext';
-import { scheduleAllAdhkar, clearExpiredNotifications } from '../services/adhkarNotifications';
+import { scheduleAllAdhkar, clearExpiredNotifications, loadNotificationSettings } from '../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,7 +25,7 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    scheduleAllAdhkar().catch(() => {});
+    loadNotificationSettings().then((settings) => scheduleAllAdhkar(settings)).catch(() => {});
 
     const notificationSub = Notifications.addNotificationResponseReceivedListener((response) => {
       const route = response.notification.request.content.data?.route as string | undefined;
