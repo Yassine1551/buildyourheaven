@@ -1,51 +1,66 @@
-# Build Your Heaven
+# Build Your Heaven — ابنِ جنتك
 
-An Islamic worship companion app built with React Native (Expo).
+تطبيق إسلامي تفاعلي (React Native / Expo) يساعد على المداومة على الذكر خلال الورد، وبناء "جنة" المستخدم ذكراً ذكراً عبر نظام تحفيز (Gamification).
 
-## Features
+## المزايا
 
-- **Daily Adhkar**: Morning, evening, sleep, and wake-up remembrances with interactive counters
-- **Quran**: Browse surahs and read Quranic verses
-- **Prayer Tracker**: Track your 5 daily prayers with times
-- **Digital Tasbeeh**: Count your dhikr
-- **Duas**: Collection of daily duas
-- **Leaderboard**: Track your worship streaks and rankings
-- **Badges**: Earn achievements for consistency
-- **Notifications**: Prayer reminders and adhkar alerts
+- **الأذكار اليومية**: أذكار الصباح، المساء، النوم، والاستيقاظ بعدادات تفاعلية.
+- **شجرة البطاقات**: سلسلة بطاقات أذكار تُفتح تباعاً عند إتمام سابقتها (مغفرة الذنوب، ألف حسنة، نخلة، حرز، صلاة على النبي ﷺ، ثلث القرآن...).
+- **آيات للحفظ**: أكثر من 100 بطاقة آيات من القرآن (بالترتيب مصحفي) لتسميعها، بحجم خط وتباعد أسطر قابلان للتخصيص.
+- **الورد الشخصي**: ورد أذكار يومي مخصّص مع إعدادات الهدف.
+- **المحراب**: سبحة رقمية بعداد دائري وضغط مطوّل لإعادة التعيين.
+- **القرآن**: تصفّح السور ومعاينة النصوص.
+- **الأوسمة**: أوسمة تصاعدية تمنح عند تحقيق الإنجازات.
+- **الحدائق الجبّية**: عنصر لعب (نخيل، قصور، أشواق) يُبنى بإنجاز الأذكار.
+- **التنبيهات**: إشعارات مجدولة لأوقات الأذكار.
+- **مشاركة الأذكار**: مشاركة أذكار الصباح/المساء/النوم/الاستيقاظ مع رابط التطبيق.
 
-## Tech Stack
+## التقنية
 
-- React Native (Expo SDK 52)
-- Expo Router (file-based routing)
-- TypeScript
-- Android (native)
+- React Native **0.81.5** — Expo **SDK 54** — Expo Router 6
+- TypeScript — NativeWind 4 — Reanimated 4
+- AsyncStorage للتخزين المحلي — Zustand و Redux لإدارة الحالة
 
-## Getting Started
+## التشغيل
 
 ```bash
 npm install
 npx expo start
 ```
 
-Build for Android:
+بناء نسخة أندرويد:
 
 ```bash
 npx expo run:android
 ```
 
-## Project Structure
+## هيكل المشروع
 
 ```
-app/               # Expo Router screens
-  (tabs)/          # Bottom tab navigation
-    index.tsx      # Home screen
-    quran.tsx      # Quran browser
-    rankings.tsx   # Leaderboard
-    badges.tsx     # Achievements
-    notifications.tsx # Settings
-  _layout.tsx      # Root layout
-constants/         # Data files (verses, etc.)
-template/          # Templates (auth, UI)
-android/           # Android native project
-scripts/           # Build/utility scripts
+app/                          # شاشات Expo Router
+  index.tsx                   # شاشة البداية (Splash)
+  (tabs)/
+    _layout.tsx               # Tab Navigator
+    index.tsx                 # الشاشة الرئيسية (الأذكار/الحديقة)
+    quran.tsx                 # القرآن الكريم
+    badges.tsx                # الأوسمة
+    rankings.tsx              # آيات للحفظ (تسميع)
+    notifications.tsx         # التنبيهات
+  mihrab.tsx                  # السبحة (المحراب)
+  morning-adhkar.tsx          # أذكار الصباح
+  evening-adhkar.tsx          # أذكار المساء
+  sleep-adhkar.tsx            # أذكار النوم
+  wakeup-adhkar.tsx           # أذكار الاستيقاظ
+  wird.tsx                    # الورد الشخصي
+  congratulations.tsx         # شاشة الاحتفال
+constants/                    # بيانات وثيم (verses, badges, benefits, theme, config)
+components/                   # مكونات واجهة (DhikrPlayer, WirdSettingsModal, garden/*)
+contexts/                     # AppContext (إدارة الحالة)
+services/                     # بيانات الأذكار ومحرك المكافآت
+template/                     # قوالب (auth)
+scripts/                      # أدوات/سكربتات بناء البيانات
 ```
+
+## التوثيق المفصّل
+
+راجع `DOCUMENTATION.sh` للتفاصيل الكاملة (نظام البطاقات، محرك المكافآت، التخزين، الإشعارات، خارطة الطريق).
