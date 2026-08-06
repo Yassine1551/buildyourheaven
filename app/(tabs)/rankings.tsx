@@ -34,7 +34,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   hasPrev: boolean;
 }) {
   const [showStrategy, setShowStrategy] = useState(false);
-  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '18b' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : 18);
+  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : 18);
   const [readingPhase, setReadingPhase] = useState<'natharan' | 'ghayban' | 'complete'>('natharan');
   const [readingCount, setReadingCount] = useState(0);
   const nextUnlocked = readingPhase === 'complete' || isMemorized;
@@ -66,7 +66,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   useEffect(() => {
     setReadingPhase('natharan');
     setReadingCount(0);
-    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '18b' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : 18);
+    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : 18);
   }, [item.id]);
 
   return (
@@ -141,7 +141,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
                   showsVerticalScrollIndicator={false}
                   nestedScrollEnabled
                 >
-                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '19' ? 18 : item.id === '24' ? 14 : item.id === '25' ? 18 : 22)) }]}>{item.verses}</Text>
+                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '20' ? 18 : item.id === '25' ? 14 : item.id === '26' ? 18 : item.id === '40' ? 18 : item.id === '41' ? 18 : item.id === '48' ? 18 : item.id === '55' ? 18 : item.id === '56' ? 18 : item.id === '58' ? 18 : item.id === '59' ? 18 : item.id === '60' ? 18 : item.id === '61' ? 18 : item.id === '62' ? 18 : 22)) }]}>{item.verses}</Text>
                 </ScrollView>
               </View>
 
