@@ -381,7 +381,10 @@ export function formatCompactNumber(num: number, western: boolean = true): strin
       });
       result = formatter.format(num);
     } catch (e) {
-      if (num >= 1_000_000_000) {
+      if (num >= 1_000_000_000_000) {
+        const t = num / 1_000_000_000_000;
+        result = (t % 1 === 0 ? t.toFixed(0) : t.toFixed(1)) + 'T';
+      } else if (num >= 1_000_000_000) {
         const b = num / 1_000_000_000;
         result = (b % 1 === 0 ? b.toFixed(0) : b.toFixed(1)) + 'B';
       } else if (num >= 1_000_000) {

@@ -8,6 +8,7 @@ import {
   Modal,
   TouchableOpacity,
   Share,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,9 +19,45 @@ import Animated, {
 } from 'react-native-reanimated';
 import { theme } from '../../constants/theme';
 import { useApp } from '../../contexts/AppContext';
+import { formatCompactNumber } from '../../services/mockData';
 import { versesData, VerseItem } from '../../constants/verses';
 
 const STORAGE_KEY = 'memorized_verses';
+
+// Count the Arabic letters in a verse, ignoring diacritics, spaces and verse-number markers.
+function verseLetterCount(item: VerseItem): number {
+  const text = item.verses;
+  // Remove tashkeel (Arabic diacritics)
+  const noTashkeel = text.replace(/[\u064B-\u0652\u0670\u0653-\u0655]/g, '');
+  // Remove spacing/control and verse number wrappers ﴿﴾ and digits
+  const clean = noTashkeel
+    .replace(/[\uFD3E\uFD3F]/g, '')
+    .replace(/[0-9٠-٩]/g, '')
+    .replace(/\s/g, '');
+  return clean.length;
+}
+
+// Title that shrinks step-by-step until it fits on one line, for any card.
+function AutoFitTitle({ text, style, maxSize = 18, minSize = 9 }: {
+  text: string;
+  style?: TextStyle;
+  maxSize?: number;
+  minSize?: number;
+}) {
+  const [font, setFont] = useState(maxSize);
+  return (
+    <Text
+      style={[style, { fontSize: font }]}
+      onTextLayout={(e) => {
+        if (e.nativeEvent.lines.length > 1) {
+          setFont(prev => Math.max(minSize, prev - 1));
+        }
+      }}
+    >
+      {text}
+    </Text>
+  );
+}
 
 function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onNext, onPrev, hasNext, hasPrev }: {
   item: VerseItem;
@@ -33,20 +70,23 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   hasNext: boolean;
   hasPrev: boolean;
 }) {
+  const { addHasanat } = useApp();
   const [showStrategy, setShowStrategy] = useState(false);
-  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : 18);
+  const [showBalanceInfo, setShowBalanceInfo] = useState(false);
+  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : item.id === '70' ? 16 : item.id === '73' ? 16 : item.id === '84' ? 16 : item.id === '86' ? 16 : item.id === '87' ? 16 : item.id === '90' ? 16 : item.id === '99' ? 16 : 18);
   const [readingPhase, setReadingPhase] = useState<'natharan' | 'ghayban' | 'complete'>('natharan');
   const [readingCount, setReadingCount] = useState(0);
   const nextUnlocked = readingPhase === 'complete' || isMemorized;
-  const titleFontSize = item.id === "3" ? 12 : item.id === "10" ? 15 : item.id === "11" ? 16 : item.title.length > 32 ? 14 : 18;
 
   const handleReadingPress = useCallback(() => {
     if (readingPhase === 'natharan' && readingCount < 10) {
       setReadingCount(prev => prev + 1);
+      addHasanat(verseLetterCount(item) * 10);
     } else if (readingPhase === 'ghayban' && readingCount < 5) {
       setReadingCount(prev => prev + 1);
+      addHasanat(verseLetterCount(item) * 10);
     }
-  }, [readingPhase, readingCount]);
+  }, [readingPhase, readingCount, item, addHasanat]);
 
   useEffect(() => {
     if (readingPhase === 'natharan' && readingCount === 10) {
@@ -66,7 +106,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   useEffect(() => {
     setReadingPhase('natharan');
     setReadingCount(0);
-    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : 18);
+    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : item.id === '70' ? 16 : item.id === '73' ? 16 : item.id === '84' ? 16 : item.id === '86' ? 16 : item.id === '87' ? 16 : item.id === '90' ? 16 : item.id === '99' ? 16 : 18);
   }, [item.id]);
 
   return (
@@ -84,7 +124,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
               <MaterialIcons name="close" size={24} color="rgba(255,255,255,0.6)" />
             </Pressable>
             <View style={styles.modalTitleRow}>
-              <Text style={[styles.modalTitle, { fontSize: titleFontSize }]} numberOfLines={1}>{item.title}</Text>
+              <AutoFitTitle text={item.title} style={styles.modalTitle} />
             </View>
             <Text style={styles.modalOrder}>{item.order}</Text>
           </View>
@@ -130,6 +170,34 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
             </Pressable>
           </Modal>
 
+          {/* Balance Scale Info Popup */}
+          <Modal visible={showBalanceInfo} transparent animationType="fade" statusBarTranslucent>
+            <Pressable style={styles.strategyPopupOverlay} onPress={() => setShowBalanceInfo(false)}>
+              <View style={styles.strategyPopupBox}>
+                <Text style={styles.strategyTitle}>مقياس رصيد الحسنات</Text>
+                <View style={styles.strategyStepRow}>
+                  <Text style={styles.strategyStep}>1K = 1000 حسنة</Text>
+                  <Text style={styles.strategyStepNum}>K</Text>
+                </View>
+                <View style={styles.strategyStepRow}>
+                  <Text style={styles.strategyStep}>1M = 1000000 حسنة</Text>
+                  <Text style={styles.strategyStepNum}>M</Text>
+                </View>
+                <View style={styles.strategyStepRow}>
+                  <Text style={styles.strategyStep}>1B = 1000000000 حسنة</Text>
+                  <Text style={styles.strategyStepNum}>B</Text>
+                </View>
+                <View style={styles.strategyStepRow}>
+                  <Text style={styles.strategyStep}>1T = 1000000000000 حسنة</Text>
+                  <Text style={styles.strategyStepNum}>T</Text>
+                </View>
+                <Pressable onPress={() => setShowBalanceInfo(false)} style={styles.strategyPopupClose}>
+                  <Text style={styles.strategyPopupCloseText}>حسناً</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Modal>
+
           {/* Content */}
           <View style={{ flex: 1, overflow: 'hidden' }}>
             <View style={styles.modalContent}>
@@ -141,14 +209,21 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
                   showsVerticalScrollIndicator={false}
                   nestedScrollEnabled
                 >
-                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '20' ? 18 : item.id === '25' ? 14 : item.id === '26' ? 18 : item.id === '40' ? 18 : item.id === '41' ? 18 : item.id === '48' ? 18 : item.id === '55' ? 18 : item.id === '56' ? 18 : item.id === '58' ? 18 : item.id === '59' ? 18 : item.id === '60' ? 18 : item.id === '61' ? 18 : item.id === '62' ? 18 : 22)) }]}>{item.verses}</Text>
+                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '20' ? 18 : item.id === '25' ? 14 : item.id === '26' ? 18 : item.id === '40' ? 18 : item.id === '41' ? 18 : item.id === '48' ? 18 : item.id === '55' ? 18 : item.id === '56' ? 18 : item.id === '58' ? 18 : item.id === '59' ? 18 : item.id === '60' ? 18 : item.id === '61' ? 18 : item.id === '62' ? 18 : item.id === '70' ? 14 : item.id === '71' ? 18 : item.id === '73' ? 14 : 22)) * (item.id === '84' || item.id === '86' || item.id === '87' || item.id === '89' || item.id === '90' || item.id === '91' || item.id === '99' ? 0.8 : item.id === '98' ? 0.75 : item.id === '85' || item.id === '92' || item.id === '93' || item.id === '96' || item.id === '97' ? 0.9 : 1) }]}>{item.verses}</Text>
                 </ScrollView>
               </View>
 
               {/* Virtue - fixed */}
               <View style={styles.modalVirtueWrap}>
                 <View style={styles.modalVirtueDivider} />
-                <Text style={styles.modalVirtueLabel}>فضل الآية</Text>
+                <View style={styles.virtueHeaderRow}>
+                  <Pressable onPress={() => addHasanat(verseLetterCount(item) * 10)} style={styles.hasanatRewardBtn}>
+                    <Text style={styles.hasanatRewardText}>
+                      +{verseLetterCount(item) * 10} حسنة لكل مرة
+                    </Text>
+                  </Pressable>
+                  <Text style={styles.modalVirtueLabel}>فضل الآية</Text>
+                </View>
                 <Text style={styles.modalVirtueText}>{item.virtue}</Text>
               </View>
             </View>
@@ -737,13 +812,52 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     marginVertical: 8,
   },
+  virtueHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  hasanatRewardBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(212,175,55,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.35)',
+  },
+  hasanatRewardText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.gold,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceFloating: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+    backgroundColor: 'rgba(2,26,19,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.25)',
+  },
+  balanceInfoBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginLeft: 4,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalVirtueLabel: {
     fontSize: 12,
     fontWeight: '700',
     color: theme.gold,
     writingDirection: 'rtl',
     textAlign: 'right',
-    marginBottom: 6,
   },
   modalVirtueText: {
     fontSize: 14,

@@ -36,6 +36,7 @@ interface AppState {
 
 interface AppContextType extends AppState {
   incrementDhikr: (dhikrId: string, hasanatPerCount: number) => void;
+  addHasanat: (amount: number) => void;
   resetDhikr: (dhikrId: string) => void;
   updateStat: (key: string, value: number) => void;
   getElapsedTime: () => { months: number; days: number; hours: number; minutes: number };
@@ -565,6 +566,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, getTodayDateString, stats, hasanat, istiqama, level, vibrationEnabled, targetStartDate, getTotalGlobalDhikr, reviewState, checkBadges, enqueueCelebration]);
 
+  // Direct hasanat credit (used by verse rewards without touching dhikr counters)
+  const addHasanat = useCallback((amount: number) => {
+    if (amount <= 0) return;
+    const newHasanat = hasanat + amount;
+    setHasanat(newHasanat);
+    checkBadges({ hasanat: newHasanat });
+    incrementTodayCount();
+  }, [hasanat, checkBadges, incrementTodayCount]);
+
   // ============================================================
   // ADHKAR INCREMENTS (Morning/Evening/Sleep/Wakeup)
   // ============================================================
@@ -808,7 +818,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetVersesData = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem('verse_progress');
+      await AsyncStorage.multiRemove(['verse_progress', 'memorized_verses']);
     } catch (e) {}
   }, []);
 
@@ -860,7 +870,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hasanat, dhikrCounts, stats, targetStartDate, userName, showWelcome, level, istiqama,
         unlockedCards, celebrationQueue, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
         wirdConfig, wirdCounts, wirdDate,
-        incrementDhikr, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
+        incrementDhikr, addHasanat, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
         dismissWelcome, isCardUnlocked, getUnlockRequirement, clearFirstCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,
         toggleNumeralSystem, isDarkMode, toggleDarkMode, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,

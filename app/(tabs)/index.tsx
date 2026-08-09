@@ -138,6 +138,7 @@ export default function DashboardScreen() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showBalanceInfo, setShowBalanceInfo] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
 
   // Full reset state
@@ -508,7 +509,16 @@ export default function DashboardScreen() {
                   <MaterialIcons name={vibrationEnabled ? 'vibration' : 'smartphone'} size={18} color={vibrationEnabled ? theme.textSecondary : '#EF4444'} />
                 </Pressable>
               </View>
-              <Text style={styles.hasanatLabel}>رصيد الحسنات</Text>
+              <View style={styles.hasanatLabelRow}>
+                <Text style={styles.hasanatLabel}>رصيد الحسنات</Text>
+                <Pressable
+                  onPress={() => setShowBalanceInfo(true)}
+                  style={styles.balanceInfoBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialIcons name="help" size={13} color="rgba(255,255,255,0.5)" />
+                </Pressable>
+              </View>
               <Animated.View style={pulseStyle}>
                 <Text style={styles.hasanatValue}>+{formatNumber(hasanat, useWesternNumerals)}</Text>
               </Animated.View>
@@ -1569,6 +1579,37 @@ export default function DashboardScreen() {
         </Pressable>
       </Modal>
 
+      {/* Balance Scale Info Modal */}
+      <Modal visible={showBalanceInfo} transparent animationType="fade">
+        <Pressable onPress={() => setShowBalanceInfo(false)} style={styles.resetConfirmOverlay}>
+          <Pressable onPress={() => {}} style={styles.resetConfirmModal}>
+            <View style={styles.resetConfirmOrnament}>
+              <MaterialIcons name="info-outline" size={32} color="#D4AF37" />
+            </View>
+            <Text style={styles.resetConfirmTitle}>مقياس رصيد الحسنات</Text>
+            <View style={styles.resetConfirmMsgCard}>
+              {([
+                ['K', '1000'],
+                ['M', '1000000'],
+                ['B', '1000000000'],
+                ['T', '1000000000000'],
+              ] as const).map(([unit, count]) => (
+                <View key={unit} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: '#1a1a1a' }}>1{unit}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#666' }}>{count} حسنة</Text>
+                </View>
+              ))}
+            </View>
+            <Pressable
+              onPress={() => setShowBalanceInfo(false)}
+              style={({ pressed }) => [styles.resetConfirmCancelBtn, { borderColor: 'rgba(212,175,55,0.5)', borderWidth: 1 }, pressed && { opacity: 0.6 }]}
+            >
+              <Text style={styles.resetConfirmCancelText}>حسناً</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {sharingBenefit && (() => {
         const idx = dailyBenefit.lastIndexOf(' - ');
         const quote = idx !== -1 ? dailyBenefit.slice(0, idx) : dailyBenefit;
@@ -1640,6 +1681,19 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     writingDirection: 'rtl',
     textAlign: 'left',
+  },
+  hasanatLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceInfoBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginLeft: 5,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   hasanatValue: {
     fontSize: 34,
