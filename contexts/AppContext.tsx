@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { APP_CONFIG } from '../constants/config';
@@ -10,6 +10,10 @@ import { sleepAdhkarItems } from '../services/sleepAdhkar';
 import { eveningAdhkarItems } from '../services/eveningAdhkar';
 import { wakeupAdhkarItems } from '../services/wakeupAdhkar';
 import { WirdDhikrItem, DEFAULT_WIRD_ITEMS, WIRD_CONFIG_VERSION } from '../services/personalWird';
+import { TourRect } from '../constants/tour';
+import { GameSnapshot, getServerSnapshot, pushServerSnapshot, upsertProfile } from '../services/cloudSync';
+import { GoogleUser, signInWithGoogle, signOutGoogle } from '../services/supabaseClient';
+import { initSessionTracker, getDeviceId } from '../services/sessionTracker';
 
 type ReviewState = 'pristine' | 'deferred' | 'rated';
 
@@ -43,6 +47,8 @@ interface AppContextType extends AppState {
   getTargetProgress: () => number;
   setUserName: (name: string) => void;
   dismissWelcome: () => void;
+  welcomeIntroDone: boolean;
+  setWelcomeIntroDone: (v: boolean) => void;
   isCardUnlocked: (dhikrId: string) => boolean;
   getUnlockRequirement: (dhikrId: string) => string;
   clearFirstCelebration: () => void;
@@ -55,6 +61,8 @@ interface AppContextType extends AppState {
   toggleNumeralSystem: () => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  recitation: 'hafs' | 'warsh';
+  setRecitation: (r: 'hafs' | 'warsh') => void;
   targetYears: number;
   setTargetYears: (years: number) => void;
   resetAllData: () => void;
@@ -81,6 +89,15 @@ interface AppContextType extends AppState {
   setGender: (g: 'male' | 'female') => void;
   epithet: string;
   setEpithet: (e: string) => void;
+  onboardingDone: boolean;
+  setOnboardingDone: (v: boolean) => void;
+  tourRects: Partial<Record<string, TourRect>>;
+  setTourRects: (patch: Partial<Record<string, TourRect>>) => void;
+  tourTarget: string | null;
+  tourTick: number;
+  requestTourMeasure: (target: string) => void;
+  tourRoot: TourRect | null;
+  setTourRoot: (r: TourRect | null) => void;
   badges: string[];
   loaded: boolean;
   dailyGoal: number;
@@ -88,6 +105,11 @@ interface AppContextType extends AppState {
   getTodayCount: () => number;
   computeStreak: () => number;
   computeAllTimePeak: () => number;
+  cloudUser: GoogleUser | null;
+  cloudLoading: boolean;
+  cloudError: string | null;
+  linkGoogle: () => Promise<{ ok: boolean; error?: string }>;
+  unlinkGoogle: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -132,6 +154,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [targetStartDate] = useState('2024-01-15');
   const [userName, setUserNameState] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
+  const [welcomeIntroDone, setWelcomeIntroDoneState] = useState(false);
   const [level, setLevel] = useState(1);
   const [istiqama, setIstiqama] = useState(0);
   const [unlockedCards, setUnlockedCards] = useState<string[]>(['maghfira']);
@@ -142,6 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [useWesternNumerals, setUseWesternNumerals] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [recitation, setRecitationState] = useState<'hafs' | 'warsh'>('hafs');
   const [darkAuto, setDarkAuto] = useState(true);
   const [targetYears, setTargetYearsState] = useState(60);
   const [morningCounts, setMorningCounts] = useState<Record<string, number>>({});
@@ -158,8 +182,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reviewState, setReviewState] = useState<ReviewState>('pristine');
   const [shouldShowReview, setShouldShowReview] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [onboardingDone, setOnboardingDoneState] = useState(false);
+  const [tourRects, setTourRectsState] = useState<Partial<Record<string, TourRect>>>({});
+  const [tourTarget, setTourTarget] = useState<string | null>(null);
+  const [tourTick, setTourTick] = useState(0);
+  const [tourRoot, setTourRootState] = useState<TourRect | null>(null);
+  const [cloudUser, setCloudUser] = useState<GoogleUser | null>(null);
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const cloudUserRef = useRef<GoogleUser | null>(null);
+
+  useEffect(() => {
+    cloudUserRef.current = cloudUser;
+  }, [cloudUser]);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    initSessionTracker(() => cloudUserRef.current?.id ?? null);
+  }, []);
 
   // Auto dark mode: ON from 6 PM to 6 AM by default, unless manually toggled
   useEffect(() => {
@@ -175,7 +216,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, welcomeIntroDone, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges, recitation, onboardingDone]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -186,8 +227,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedAlfHasanaDate, savedHattKhatayaDate, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([
-        AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
+      const [savedHasanat, savedDhikr, savedInternal, savedAlfHasanaDate, savedHattKhatayaDate, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([        AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
         AsyncStorage.getItem('alf_hasana_date'),
@@ -214,6 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem('wird_config'),
         AsyncStorage.getItem('wird_counts'),
         AsyncStorage.getItem('wird_date'),
+        AsyncStorage.getItem('recitation'),
       ]);
       if (savedHasanat) setHasanat(JSON.parse(savedHasanat));
       if (savedDhikr) setDhikrCounts(JSON.parse(savedDhikr));
@@ -291,6 +332,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedWakeupCounts) setWakeupCounts(JSON.parse(savedWakeupCounts));
       const savedReviewState = await AsyncStorage.getItem('review_state');
       if (savedReviewState) setReviewState(JSON.parse(savedReviewState));
+      const savedRecitation = await AsyncStorage.getItem('recitation');
+      if (savedRecitation === 'warsh' || savedRecitation === 'hafs') setRecitationState(savedRecitation);
+      const savedOnboarding = await AsyncStorage.getItem('onboarding_seen');
+      if (savedOnboarding !== null) setOnboardingDoneState(JSON.parse(savedOnboarding) === true);
+      const savedIntroDone = await AsyncStorage.getItem('welcome_intro_done');
+      if (savedIntroDone !== null) setWelcomeIntroDoneState(JSON.parse(savedIntroDone) === true);
+      const savedCloudUser = await AsyncStorage.getItem('cloud_user');
+      if (savedCloudUser) {
+        try {
+          const parsed = JSON.parse(savedCloudUser);
+          if (parsed?.id) setCloudUser(parsed);
+        } catch (e) {}
+      }
     } catch (e) {}
     setLoaded(true);
   };
@@ -329,9 +383,138 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('wird_config_version', String(WIRD_CONFIG_VERSION)),
         AsyncStorage.setItem('wird_counts', JSON.stringify(wirdCounts)),
         AsyncStorage.setItem('wird_date', wirdDate),
+        AsyncStorage.setItem('recitation', recitation),
+        AsyncStorage.setItem('onboarding_seen', JSON.stringify(onboardingDone)),
+        AsyncStorage.setItem('welcome_intro_done', JSON.stringify(welcomeIntroDone)),
+        AsyncStorage.setItem('last_saved_at', new Date().toISOString()),
       ]);
     } catch (e) {}
   };
+
+  // ============================================================
+  // CLOUD SYNC (Supabase)
+  // ============================================================
+  const buildSnapshot = useCallback((lastSavedAt: string): GameSnapshot => ({
+    lastSavedAt,
+    userName,
+    hasanat,
+    dhikrCounts,
+    internalDhikrCounts,
+    stats,
+    morningCounts,
+    sleepCounts,
+    eveningCounts,
+    wakeupCounts,
+    wirdConfig,
+    wirdCounts,
+    wirdDate,
+    gender,
+    epithet,
+    badges,
+    level,
+    istiqama,
+    unlockedCards,
+    dailyLog,
+    dailyGoal,
+    soundEnabled,
+    vibrationEnabled,
+    useWesternNumerals,
+    isDarkMode,
+    darkAuto,
+    targetYears,
+    recitation,
+    reviewState,
+    onboardingDone,
+    showWelcome,
+  }), [userName, hasanat, dhikrCounts, internalDhikrCounts, stats, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, gender, epithet, badges, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, recitation, reviewState, onboardingDone, showWelcome]);
+
+  const applySnapshot = useCallback((s: GameSnapshot) => {
+    if (s.userName !== undefined) setUserNameState(s.userName);
+    if (s.hasanat !== undefined) setHasanat(s.hasanat);
+    if (s.dhikrCounts) setDhikrCounts(s.dhikrCounts);
+    if (s.internalDhikrCounts) setInternalDhikrCounts(s.internalDhikrCounts);
+    if (s.stats) setStats(s.stats);
+    if (s.morningCounts) setMorningCounts(s.morningCounts);
+    if (s.sleepCounts) setSleepCounts(s.sleepCounts);
+    if (s.eveningCounts) setEveningCounts(s.eveningCounts);
+    if (s.wakeupCounts) setWakeupCounts(s.wakeupCounts);
+    if (s.wirdConfig) setWirdConfig(s.wirdConfig);
+    if (s.wirdCounts) setWirdCounts(s.wirdCounts);
+    if (s.wirdDate) setWirdDate(s.wirdDate);
+    if (s.gender) setGenderState(s.gender as 'male' | 'female');
+    if (s.epithet) setEpithetState(s.epithet);
+    if (s.badges) setBadges(s.badges);
+    if (s.level !== undefined) setLevel(s.level);
+    if (s.istiqama !== undefined) setIstiqama(s.istiqama);
+    if (s.unlockedCards) setUnlockedCards(s.unlockedCards);
+    if (s.dailyLog) setDailyLog(s.dailyLog);
+    if (s.dailyGoal !== undefined) setDailyGoalState(s.dailyGoal);
+    if (s.soundEnabled !== undefined) setSoundEnabled(s.soundEnabled);
+    if (s.vibrationEnabled !== undefined) setVibrationEnabled(s.vibrationEnabled);
+    if (s.useWesternNumerals !== undefined) setUseWesternNumerals(s.useWesternNumerals);
+    if (s.isDarkMode !== undefined) setIsDarkMode(s.isDarkMode);
+    if (s.darkAuto !== undefined) setDarkAuto(s.darkAuto);
+    if (s.targetYears !== undefined) setTargetYearsState(s.targetYears);
+    if (s.recitation) setRecitationState(s.recitation as 'hafs' | 'warsh');
+    if (s.reviewState) setReviewState(s.reviewState as ReviewState);
+    if (s.onboardingDone !== undefined) setOnboardingDoneState(s.onboardingDone);
+    if (s.showWelcome !== undefined) setShowWelcome(s.showWelcome);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || !cloudUser) return;
+    const t = setTimeout(() => {
+      pushServerSnapshot(cloudUser.id, buildSnapshot(new Date().toISOString())).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [loaded, cloudUser, buildSnapshot]);
+
+  const linkGoogle = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    setCloudLoading(true);
+    setCloudError(null);
+    try {
+      const res = await signInWithGoogle();
+      if (!res.user) {
+        setCloudError(res.error || 'تعذر تسجيل الدخول');
+        return { ok: false, error: res.error };
+      }
+      const user = res.user;
+      setCloudUser(user);
+      await AsyncStorage.setItem('cloud_user', JSON.stringify(user));
+
+      const deviceId = await getDeviceId();
+      await upsertProfile(user.id, {
+        displayName: user.name || '',
+        gender: gender || undefined,
+        deviceId,
+      });
+
+      const server = await getServerSnapshot(user.id);
+      const localTs = await AsyncStorage.getItem('last_saved_at');
+      const serverTs = server?.lastSavedAt ?? null;
+      const serverIsNewer =
+        !!server && !!serverTs && (!localTs || new Date(serverTs).getTime() > new Date(localTs).getTime());
+
+      if (serverIsNewer && server) {
+        applySnapshot(server.state);
+        await AsyncStorage.setItem('last_saved_at', serverTs!);
+      } else {
+        await pushServerSnapshot(user.id, buildSnapshot(new Date().toISOString()));
+      }
+      return { ok: true };
+    } catch (e: any) {
+      setCloudError(e?.message || 'تعذر الاتصال بالحساب');
+      return { ok: false, error: e?.message };
+    } finally {
+      setCloudLoading(false);
+    }
+  }, [userName, gender, buildSnapshot, applySnapshot]);
+
+  const unlinkGoogle = useCallback(async () => {
+    setCloudUser(null);
+    await AsyncStorage.removeItem('cloud_user');
+    await signOutGoogle();
+  }, []);
 
   // ============================================================
   // GLOBAL TOTAL HELPER
@@ -738,6 +921,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setUserName = useCallback((name: string) => { setUserNameState(name); }, []);
   const dismissWelcome = useCallback(() => { setShowWelcome(false); }, []);
 
+  const setWelcomeIntroDone = useCallback((v: boolean) => { setWelcomeIntroDoneState(v); }, []);
+
   const setGender = useCallback((g: 'male' | 'female') => { setGenderState(g); }, []);
   const setEpithet = useCallback((e: string) => { setEpithetState(e); }, []);
 
@@ -776,11 +961,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDarkAuto(false);
     setIsDarkMode(prev => !prev);
   }, []);
+  const setRecitation = useCallback((r: 'hafs' | 'warsh') => { setRecitationState(r); }, []);
   const toggleDevUnlock = useCallback(() => { setIsDevUnlocked(prev => !prev); }, []);
 
   const setTargetYears = useCallback((years: number) => {
     if (years >= 1 && years <= 100) setTargetYearsState(years);
   }, []);
+
+  const setOnboardingDone = useCallback((v: boolean) => { setOnboardingDoneState(v); }, []);
+  const setTourRects = useCallback((patch: Partial<Record<string, TourRect>>) => {
+    setTourRectsState((prev) => ({ ...prev, ...patch }));
+  }, []);
+  const requestTourMeasure = useCallback((target: string) => {
+    setTourTarget(target);
+    setTourTick((t) => t + 1);
+  }, []);
+  const setTourRoot = useCallback((r: TourRect | null) => { setTourRootState(r); }, []);
 
   const markReviewAsRated = useCallback(() => {
     setReviewState('rated');
@@ -831,6 +1027,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIstiqama(0);
     setUserNameState('');
     setShowWelcome(true);
+    setWelcomeIntroDoneState(false);
     setGenderState('');
     setEpithetState('');
     setBadges([]);
@@ -853,6 +1050,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWirdDate('');
     setReviewState('pristine');
     setShouldShowReview(false);
+    setOnboardingDoneState(false);
+    setCloudUser(null);
+    await AsyncStorage.removeItem('cloud_user');
     try {
       await AsyncStorage.clear();
     } catch (e) {}
@@ -871,9 +1071,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         unlockedCards, celebrationQueue, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
         wirdConfig, wirdCounts, wirdDate,
         incrementDhikr, addHasanat, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
-        dismissWelcome, isCardUnlocked, getUnlockRequirement, clearFirstCelebration, rankTitle,
+        dismissWelcome, welcomeIntroDone, setWelcomeIntroDone, isCardUnlocked, getUnlockRequirement, clearFirstCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,
-        toggleNumeralSystem, isDarkMode, toggleDarkMode, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
+        toggleNumeralSystem, isDarkMode, toggleDarkMode, recitation, setRecitation, targetYears, setTargetYears, resetAllData, resetAdhkarData, resetVersesData,
         incrementMorningDhikr, completeMorningDhikr, incrementSleepDhikr, completeSleepDhikr,
         incrementEveningDhikr, completeEveningDhikr, incrementWakeupDhikr, completeWakeupDhikr,
         updateWirdConfig, incrementWirdDhikr,
@@ -881,6 +1081,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reviewState, shouldShowReview, markReviewAsRated, deferReview,
         gender, setGender, epithet, setEpithet, badges, loaded,
         dailyGoal, setDailyGoal, getTodayCount, computeStreak, computeAllTimePeak,
+        onboardingDone, setOnboardingDone,
+        tourRects, setTourRects, tourTarget, tourTick, requestTourMeasure,
+        tourRoot, setTourRoot,
+        cloudUser, cloudLoading, cloudError, linkGoogle, unlinkGoogle,
       }}
     >
       {children}

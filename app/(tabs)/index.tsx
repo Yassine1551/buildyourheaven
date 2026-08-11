@@ -40,6 +40,8 @@ import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, for
 import { DHIKR_BENEFITS_POOL } from '../../constants/benefits';
 import { CARD_BADGE_DEFINITIONS, TIER_INFO } from '../../constants/badges';
 import { theme } from '../../constants/theme';
+import { TOUR_TARGETS } from '../../constants/tour';
+import { useTourMeasure } from '../../hooks/useTourMeasure';
 import WirdSettingsModal from '../../components/WirdSettingsModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -121,7 +123,20 @@ export default function DashboardScreen() {
     shouldShowReview, markReviewAsRated, deferReview,
     gender, setGender,
     wirdConfig, wirdCounts,
+    setOnboardingDone, onboardingDone,
+    tourTarget, tourTick,
+    cloudUser,
   } = useApp();
+
+  const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
+
+  const homeRefs = useRef<{
+    hasanat: View | null;
+    statsGrid: View | null;
+    timeAdhkar: View | null;
+    benefit: View | null;
+    dhikrGrid: View | null;
+  }>({ hasanat: null, statsGrid: null, timeAdhkar: null, benefit: null, dhikrGrid: null });
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showWirdSettings, setShowWirdSettings] = useState(false);
@@ -145,8 +160,6 @@ export default function DashboardScreen() {
   const [isHoldingReset, setIsHoldingReset] = useState(false);
   const [resetProgress, setResetProgress] = useState(0);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
-  const [resetPendingType, setResetPendingType] = useState<'verses' | 'adhkar' | 'both' | null>(null);
-  const [resetCountdown, setResetCountdown] = useState(0);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resetCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -329,6 +342,13 @@ export default function DashboardScreen() {
     }
   };
 
+  useEffect(() => {
+    if (showWelcome && onboardingDone && cloudUser?.name) {
+      setCustomNameInput(cloudUser.name);
+      setShowNameInput(true);
+    }
+  }, [showWelcome, onboardingDone, cloudUser]);
+
   const handleDrawerNavigate = (route: string) => {
     setDrawerOpen(false);
     setTimeout(async () => {
@@ -424,48 +444,44 @@ export default function DashboardScreen() {
     setResetProgress(0);
   };
 
-  const startResetCountdown = (type: 'verses' | 'adhkar' | 'both') => {
-    if (resetPendingType) return;
-    setResetPendingType(type);
-    setResetCountdown(5);
-    resetCountdownRef.current = setInterval(() => {
-      setResetCountdown(prev => {
-        if (prev <= 1) {
-          if (resetCountdownRef.current) clearInterval(resetCountdownRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    resetTimerRef.current = setTimeout(() => {
-      if (resetCountdownRef.current) clearInterval(resetCountdownRef.current);
-      setResetPendingType(null);
-      setResetCountdown(0);
-      if (type === 'verses') resetVersesData();
-      else if (type === 'adhkar') resetAdhkarData();
-      else resetAllData();
-      setShowResetConfirmModal(false);
-      setShowSettingsModal(false);
-      if (vibrationEnabled) Haptics.selectionAsync();
-      const msgs: Record<string, string> = {
-        verses: 'تم تصفير المحفوظ من الآيات',
-        adhkar: 'تم تصفير الأذكار',
-        both: 'تم تصفير جميع البيانات',
-      };
-      showAlert('تم التصفير', msgs[type]);
-    }, 5000);
+  const performReset = (type: 'verses' | 'adhkar' | 'both') => {
+    setShowResetConfirmModal(false);
+    setShowSettingsModal(false);
+    if (type === 'verses') resetVersesData();
+    else if (type === 'adhkar') resetAdhkarData();
+    else resetAllData();
+    if (vibrationEnabled) Haptics.selectionAsync();
+    const msgs: Record<string, string> = {
+      verses: 'تم تصفير المحفوظ من الآيات',
+      adhkar: 'تم تصفير الأذكار',
+      both: 'تم تصفير جميع البيانات',
+    };
+    showAlert('تم التصفير', msgs[type]);
   };
 
   const cancelReset = () => {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
     if (resetCountdownRef.current) clearInterval(resetCountdownRef.current);
-    setResetPendingType(null);
-    setResetCountdown(0);
     setShowResetConfirmModal(false);
   };
 
   const statCardWidth = (SCREEN_WIDTH - 32 - 36) / 4;
   const dhikrCardWidth = (SCREEN_WIDTH - 32 - 24) / 3;
+
+  useEffect(() => {
+    if (!tourTarget) return;
+    if (tourTarget === TOUR_TARGETS.hasanat) ensureVisible('hasanat', homeRefs.current.hasanat, 8);
+    else if (tourTarget === TOUR_TARGETS.dashboard) ensureVisible('dashboard', homeRefs.current.statsGrid);
+    else if (tourTarget === TOUR_TARGETS.timeAdhkar) ensureVisible('timeAdhkar', homeRefs.current.timeAdhkar);
+    else if (tourTarget === TOUR_TARGETS.benefit) ensureVisible('benefit', homeRefs.current.benefit);
+    else if (tourTarget === TOUR_TARGETS.dhikrGrid) ensureVisible('dhikrGrid', homeRefs.current.dhikrGrid);
+  }, [tourTarget, tourTick, ensureVisible]);
+
+  useEffect(() => {
+    if (onboardingDone) {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }
+  }, [onboardingDone, scrollRef]);
 
   const sortedDhikr = [...dhikrItems].sort((a, b) => a.order - b.order);
   const titleFontSizes: Record<string, number> = {
@@ -486,11 +502,14 @@ export default function DashboardScreen() {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2,26,19,0.88)' }]} />
 
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        {!showWelcome && (
+        {(!showWelcome || !onboardingDone) && (
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollOffset.current = e.nativeEvent.contentOffset.y; }}
         >
           {/* Header */}
           <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
@@ -509,19 +528,21 @@ export default function DashboardScreen() {
                   <MaterialIcons name={vibrationEnabled ? 'vibration' : 'smartphone'} size={18} color={vibrationEnabled ? theme.textSecondary : '#EF4444'} />
                 </Pressable>
               </View>
-              <View style={styles.hasanatLabelRow}>
-                <Text style={styles.hasanatLabel}>رصيد الحسنات</Text>
-                <Pressable
-                  onPress={() => setShowBalanceInfo(true)}
-                  style={styles.balanceInfoBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons name="help" size={13} color="rgba(255,255,255,0.5)" />
-                </Pressable>
+              <View style={styles.hasanatCounterWrap} ref={(el) => { homeRefs.current.hasanat = el; }}>
+                <View style={styles.hasanatLabelRow}>
+                  <Text style={styles.hasanatLabel}>رصيد الحسنات</Text>
+                  <Pressable
+                    onPress={() => setShowBalanceInfo(true)}
+                    style={styles.balanceInfoBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="help" size={13} color="rgba(255,255,255,0.5)" />
+                  </Pressable>
+                </View>
+                <Animated.View style={pulseStyle}>
+                  <Text style={styles.hasanatValue}>+{formatNumber(hasanat, useWesternNumerals)}</Text>
+                </Animated.View>
               </View>
-              <Animated.View style={pulseStyle}>
-                <Text style={styles.hasanatValue}>+{formatNumber(hasanat, useWesternNumerals)}</Text>
-              </Animated.View>
             </View>
             <View style={styles.headerRight}>
               <Text style={styles.userNameHeader}>{userName || 'مجهول'}</Text>
@@ -614,7 +635,7 @@ export default function DashboardScreen() {
 
           {/* Stats Grid - 4 per row */}
           <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-            <View style={styles.statsGrid}>
+            <View style={styles.statsGrid} ref={(el) => { homeRefs.current.statsGrid = el; }}>
               {statItems.map((stat, index) => {
                 const value = stats[stat.key] || 0;
                 const displayValue = `+${formatCompactNumber(value, useWesternNumerals)}`;
@@ -642,6 +663,7 @@ export default function DashboardScreen() {
           </Animated.View>
 
           {/* Dynamic Time-Based Adhkar Entry */}
+          <View ref={(el) => { homeRefs.current.timeAdhkar = el; }}>
           {(() => {
             const slot = getAdhkarTimeSlot();
             if (slot === 'morning') {
@@ -759,8 +781,10 @@ export default function DashboardScreen() {
             }
             return null;
           })()}
+          </View>
 
           {/* فائدة اليوم */}
+          <View ref={(el) => { homeRefs.current.benefit = el; }}>
           <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.benefitSection}>
             <Pressable
               onPress={() => showAlert('فائدة اليوم', dailyBenefit)}
@@ -802,10 +826,11 @@ export default function DashboardScreen() {
               </View>
             </Pressable>
           </Animated.View>
+          </View>
 
           {/* Dhikr Action Grid */}
           <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-            <View style={styles.dhikrGrid}>
+            <View style={styles.dhikrGrid} ref={(el) => { homeRefs.current.dhikrGrid = el; }}>
               {sortedDhikr.map((item, index) => {
                 const unlocked = isCardUnlocked(item.id);
                 const count = dhikrCounts[item.id] || 0;
@@ -1045,7 +1070,7 @@ export default function DashboardScreen() {
       </Modal>
 
       {/* Welcome Modal */}
-      <Modal visible={loaded && showWelcome} transparent animationType="fade">
+      <Modal visible={loaded && showWelcome && onboardingDone} transparent animationType="fade">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.welcomeOverlay}
@@ -1056,6 +1081,15 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.welcomeTitle}>مرحباً بك في محرابك</Text>
             <Text style={styles.welcomeSubtitle}>اختر هويتك في رحلة اليقين</Text>
+
+            {cloudUser?.name && (
+              <View style={styles.welcomeGoogleNote}>
+                <MaterialIcons name="check-circle" size={16} color="#059669" />
+                <Text style={styles.welcomeGoogleNoteText}>
+                  متصل بحساب جيمايل: {cloudUser.name} — يمكنك تغيير اسمك هنا
+                </Text>
+              </View>
+            )}
 
             {!showNameInput ? (
               <>
@@ -1305,6 +1339,23 @@ export default function DashboardScreen() {
 
               <View style={styles.settingsSep} />
 
+              {/* Replay the first-run app tour */}
+              <Pressable
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  setOnboardingDone(false);
+                }}
+                style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.7 }]}
+              >
+                <View style={styles.settingTextCol}>
+                  <Text style={styles.settingLabel}>عرض شرح التطبيق</Text>
+                  <Text style={styles.settingDesc}>إعادة جولة التعريف بعناصر التطبيق</Text>
+                </View>
+                <MaterialIcons name="help-outline" size={22} color="#064E3B" />
+              </Pressable>
+
+              <View style={styles.settingsSep} />
+
               {/* Full Reset - Long Press */}
               <View style={styles.resetSection}>
                 <Text style={styles.resetSectionTitle}>منطقة الخطر</Text>
@@ -1543,30 +1594,30 @@ export default function DashboardScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => startResetCountdown('verses')}
+              onPress={() => performReset('verses')}
               style={({ pressed }) => [styles.resetOptionBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
             >
               <MaterialIcons name="book" size={20} color="#D4AF37" />
               <Text style={styles.resetOptionBtnText}>
-                {resetPendingType === 'verses' ? `الآيات (${resetCountdown})` : 'المحفوظ من الآيات فقط'}
+                المحفوظ من الآيات فقط
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => startResetCountdown('adhkar')}
+              onPress={() => performReset('adhkar')}
               style={({ pressed }) => [styles.resetOptionBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
             >
               <Text style={{fontSize: 20}}>📿</Text>
               <Text style={styles.resetOptionBtnText}>
-                {resetPendingType === 'adhkar' ? `الأذكار (${resetCountdown})` : 'الأذكار فقط'}
+                الأذكار فقط
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => startResetCountdown('both')}
+              onPress={() => performReset('both')}
               style={({ pressed }) => [styles.resetOptionBtn, styles.resetOptionBtnDanger, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
             >
               <MaterialIcons name="delete-forever" size={20} color="#FFF" />
               <Text style={[styles.resetOptionBtnText, { color: '#FFF' }]}>
-                {resetPendingType === 'both' ? `كلاهما (${resetCountdown})` : 'كلاهما'}
+                كلاهما
               </Text>
             </Pressable>
             <Pressable
@@ -1681,6 +1732,10 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     writingDirection: 'rtl',
     textAlign: 'left',
+  },
+  hasanatCounterWrap: {
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
   },
   hasanatLabelRow: {
     flexDirection: 'row',
@@ -2324,6 +2379,27 @@ const styles = StyleSheet.create({
     color: '#666',
     writingDirection: 'rtl',
     marginBottom: 24,
+  },
+  welcomeGoogleNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(5,150,105,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(5,150,105,0.25)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    maxWidth: '100%',
+  },
+  welcomeGoogleNoteText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#065F46',
+    writingDirection: 'rtl',
+    lineHeight: 18,
   },
   welcomeBtn: {
     width: '100%',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,9 @@ import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { theme } from '../../constants/theme';
+import { useTourMeasure } from '../../hooks/useTourMeasure';
+import { TOUR_TARGETS } from '../../constants/tour';
+import { useApp } from '../../contexts/AppContext';
 import { ADHKAR_SCHEDULE, loadNotificationSettings, saveNotificationSettings, scheduleAllAdhkar, AdhkarNotificationSettings, AdhkarType } from '../../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
@@ -79,6 +82,20 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { showAlert } = useAlert();
+  const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
+  const highlightRef = useRef<View | null>(null);
+  const historyRef = useRef<View | null>(null);
+  const { tourTarget, tourTick } = useApp();
+
+  useEffect(() => {
+    if (tourTarget === TOUR_TARGETS.notifications) {
+      ensureVisible(TOUR_TARGETS.notifications, highlightRef.current);
+    }
+    if (tourTarget === TOUR_TARGETS.notifHistory) {
+      ensureVisible(TOUR_TARGETS.notifHistory, historyRef.current);
+    }
+  }, [tourTarget, tourTick, ensureVisible]);
+
   const [readIds, setReadIds] = useState<string[]>([]);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [settings, setSettings] = useState<AdhkarNotificationSettings>({
@@ -229,9 +246,12 @@ export default function NotificationsScreen() {
 
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100, paddingHorizontal: 16 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollOffset.current = e.nativeEvent.contentOffset.y; }}
         >
           <View style={styles.titleRow}>
             <Pressable
@@ -252,7 +272,7 @@ export default function NotificationsScreen() {
           </View>
 
           {/* Schedule Settings */}
-          <View style={styles.scheduleCard}>
+          <View style={styles.scheduleCard} ref={(el) => { highlightRef.current = el; }}>
             <Text style={styles.scheduleTitle}>التنبيهات المجدولة</Text>
 
             {/* Morning */}
@@ -380,7 +400,9 @@ export default function NotificationsScreen() {
           </View>
 
           {/* Notifications History */}
-          <Text style={styles.sectionTitle}>سجل التنبيهات</Text>
+          <View ref={(el) => { historyRef.current = el; }}>
+            <Text style={styles.sectionTitle}>سجل التنبيهات</Text>
+          </View>
 
           {todayNotifs.length === 0 ? (
             <View style={styles.emptyState}>

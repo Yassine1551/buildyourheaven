@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,22 +19,50 @@ import Animated, {
 } from 'react-native-reanimated';
 import { theme } from '../../constants/theme';
 import { useApp } from '../../contexts/AppContext';
+import { useTourMeasure } from '../../hooks/useTourMeasure';
+import { TOUR_TARGETS } from '../../constants/tour';
 import { formatCompactNumber } from '../../services/mockData';
 import { versesData, VerseItem } from '../../constants/verses';
+import { warshVerses } from '../../constants/warsh';
 
 const STORAGE_KEY = 'memorized_verses';
 
-// Count the Arabic letters in a verse, ignoring diacritics, spaces and verse-number markers.
-function verseLetterCount(item: VerseItem): number {
-  const text = item.verses;
-  // Remove tashkeel (Arabic diacritics)
-  const noTashkeel = text.replace(/[\u064B-\u0652\u0670\u0653-\u0655]/g, '');
-  // Remove spacing/control and verse number wrappers ﴿﴾ and digits
-  const clean = noTashkeel
-    .replace(/[\uFD3E\uFD3F]/g, '')
-    .replace(/[0-9٠-٩]/g, '')
-    .replace(/\s/g, '');
-  return clean.length;
+// Count the Arabic letters in a verse, ignoring diacritics, spaces and verse-number
+// markers. This counts only the base Arabic letters (U+0621–U+064A) plus the
+// wasla-alef (U+0671), so the special marks of the King Fahd Warsh mushaf
+// (U+06EC, U+06EA, U+06D6, …) are never counted as letters.
+function verseLetterCount(text: string): number {
+  let count = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if ((c >= 0x0621 && c <= 0x064A) || c === 0x0671) count++;
+  }
+  return count;
+}
+
+// Quranic verse font size for a card. Each card keeps its tuned base size plus
+// one extra step, so every verse is shown one degree larger than before.
+function verseFontSize(id: string): number {
+  const base: Record<string, number> = {
+    '9': 17, '10': 17, '13': 17.5, '14': 17, '16': 16, '17': 16, '18': 16,
+    '19': 16, '20': 17, '21': 16, '22': 17, '23': 17, '24': 16, '25': 16,
+    '26': 16, '33': 16, '38': 17, '47': 16, '56': 17, '60': 16, '61': 17,
+    '62': 17, '70': 16, '73': 16, '84': 16, '86': 16, '87': 16, '90': 16, '99': 16,
+  };
+  return (base[id] ?? 18) + 1;
+}
+
+// Renders a verse with the right font for the active recitation. The Warsh
+// text uses the official King Fahd Warsh font (UthmanicWarsh), which shapes
+// the dammed wasl-alef (اُ۬) as a stroke across the middle of the alef exactly
+// as printed in the Warsh mushaf, and keeps the waqf mark U+06D6 as-is (the
+// Warsh source uses U+06D6 directly). Hafs verses keep ScheherazadeNew so the
+// Hafs waqf ligatures (U+06D6 "صلى", U+06DA "لا", U+06DB "ثلاث", …) render
+// correctly.
+function WarshText({ text, style, warsh }: { text: string; style: TextStyle | TextStyle[]; warsh: boolean }) {
+  if (!warsh) return <Text style={style}>{text}</Text>;
+  const base = Array.isArray(style) ? style : [style];
+  return <Text style={[...base, { fontFamily: 'UthmanicWarsh' }]}>{text}</Text>;
 }
 
 // Title that shrinks step-by-step until it fits on one line, for any card.
@@ -70,23 +98,36 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   hasNext: boolean;
   hasPrev: boolean;
 }) {
-  const { addHasanat } = useApp();
+  const { addHasanat, recitation, setRecitation } = useApp();
   const [showStrategy, setShowStrategy] = useState(false);
   const [showBalanceInfo, setShowBalanceInfo] = useState(false);
-  const [fontSize, setFontSize] = useState(() => item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : item.id === '70' ? 16 : item.id === '73' ? 16 : item.id === '84' ? 16 : item.id === '86' ? 16 : item.id === '87' ? 16 : item.id === '90' ? 16 : item.id === '99' ? 16 : 18);
+  const [fontSize, setFontSize] = useState(() => verseFontSize(item.id));
   const [readingPhase, setReadingPhase] = useState<'natharan' | 'ghayban' | 'complete'>('natharan');
   const [readingCount, setReadingCount] = useState(0);
   const nextUnlocked = readingPhase === 'complete' || isMemorized;
 
+  // Text used for hasanat counting. Letter counts are taken from the Hafs text
+  // regardless of the active recitation: Warsh and Hafs pronounce the same
+  // letters, and the Warsh mushaf only spells long vowels differently (superscript
+  // alef U+0670, yeh barree U+06D2), so counting the Hafs text keeps both
+  // recitations identical (difference 0).
+  const countText = item.verses;
+
+  // Text shown to the reader: the Warsh mushaf text when Warsh is selected
+  // (rendered with the UthmanicWarsh font), otherwise the Hafs text.
+  const displayText = recitation === 'warsh' && warshVerses[item.id]
+    ? warshVerses[item.id]
+    : item.verses;
+
   const handleReadingPress = useCallback(() => {
     if (readingPhase === 'natharan' && readingCount < 10) {
       setReadingCount(prev => prev + 1);
-      addHasanat(verseLetterCount(item) * 10);
+      addHasanat(verseLetterCount(countText) * 10);
     } else if (readingPhase === 'ghayban' && readingCount < 5) {
       setReadingCount(prev => prev + 1);
-      addHasanat(verseLetterCount(item) * 10);
+      addHasanat(verseLetterCount(countText) * 10);
     }
-  }, [readingPhase, readingCount, item, addHasanat]);
+  }, [readingPhase, readingCount, countText, addHasanat]);
 
   useEffect(() => {
     if (readingPhase === 'natharan' && readingCount === 10) {
@@ -106,7 +147,7 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
   useEffect(() => {
     setReadingPhase('natharan');
     setReadingCount(0);
-    setFontSize(item.id === '9' ? 17 : item.id === '10' ? 17 : item.id === '13' ? 17.5 : item.id === '14' ? 17 : item.id === '16' ? 16 : item.id === '17' ? 16 : item.id === '18' ? 16 : item.id === '19' ? 16 : item.id === '20' ? 17 : item.id === '21' ? 16 : item.id === '22' ? 17 : item.id === '23' ? 17 : item.id === '24' ? 16 : item.id === '25' ? 16 : item.id === '26' ? 16 : item.id === '33' ? 16 : item.id === '38' ? 17 : item.id === '47' ? 16 : item.id === '56' ? 17 : item.id === '60' ? 16 : item.id === '61' ? 17 : item.id === '62' ? 17 : item.id === '70' ? 16 : item.id === '73' ? 16 : item.id === '84' ? 16 : item.id === '86' ? 16 : item.id === '87' ? 16 : item.id === '90' ? 16 : item.id === '99' ? 16 : 18);
+    setFontSize(verseFontSize(item.id));
   }, [item.id]);
 
   return (
@@ -144,6 +185,20 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
                 <MaterialIcons name="lightbulb-outline" size={16} color={showStrategy ? theme.gold : 'rgba(255,255,255,0.3)'} />
                 <Text style={[styles.toggleBtnText, showStrategy && { color: theme.gold }]}>استراتيجية الحفظ</Text>
               </Pressable>
+              <View style={styles.recitationRow}>
+                <Pressable
+                  onPress={() => setRecitation('warsh')}
+                  style={[styles.recitationBtn, recitation === 'warsh' && styles.recitationBtnActive]}
+                >
+                  <Text style={[styles.recitationBtnText, recitation === 'warsh' && styles.recitationBtnTextActive]}>ورش</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setRecitation('hafs')}
+                  style={[styles.recitationBtn, recitation === 'hafs' && styles.recitationBtnActive]}
+                >
+                  <Text style={[styles.recitationBtnText, recitation === 'hafs' && styles.recitationBtnTextActive]}>حفص</Text>
+                </Pressable>
+              </View>
             </View>
 
           {/* Strategy Popup */}
@@ -203,23 +258,23 @@ function FocusModal({ item, visible, onClose, isMemorized, onToggleMemorize, onN
             <View style={styles.modalContent}>
               {/* Verse text - fixed frame, scroll inside */}
               <View style={styles.modalVersesWrap}>
-                <ScrollView
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ alignItems: 'center', paddingVertical: 0 }}
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled
-                >
-                  <Text style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '20' ? 18 : item.id === '25' ? 14 : item.id === '26' ? 18 : item.id === '40' ? 18 : item.id === '41' ? 18 : item.id === '48' ? 18 : item.id === '55' ? 18 : item.id === '56' ? 18 : item.id === '58' ? 18 : item.id === '59' ? 18 : item.id === '60' ? 18 : item.id === '61' ? 18 : item.id === '62' ? 18 : item.id === '70' ? 14 : item.id === '71' ? 18 : item.id === '73' ? 14 : 22)) * (item.id === '84' || item.id === '86' || item.id === '87' || item.id === '89' || item.id === '90' || item.id === '91' || item.id === '99' ? 0.8 : item.id === '98' ? 0.75 : item.id === '85' || item.id === '92' || item.id === '93' || item.id === '96' || item.id === '97' ? 0.9 : 1) }]}>{item.verses}</Text>
-                </ScrollView>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ alignItems: 'center', paddingVertical: 0 }}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled
+              >
+                <WarshText warsh={recitation === 'warsh' && !!warshVerses[item.id]} style={[styles.modalVersesText, { fontSize, lineHeight: (fontSize + (item.id === '20' ? 18 : item.id === '25' ? 14 : item.id === '26' ? 18 : item.id === '40' ? 18 : item.id === '41' ? 18 : item.id === '48' ? 18 : item.id === '55' ? 18 : item.id === '56' ? 18 : item.id === '58' ? 18 : item.id === '59' ? 18 : item.id === '60' ? 18 : item.id === '61' ? 18 : item.id === '62' ? 18 : item.id === '70' ? 14 : item.id === '71' ? 18 : item.id === '73' ? 14 : 22)) * (item.id === '84' || item.id === '86' || item.id === '87' || item.id === '89' || item.id === '90' || item.id === '91' || item.id === '99' ? 0.8 : item.id === '98' ? 0.75 : item.id === '85' || item.id === '92' || item.id === '93' || item.id === '96' || item.id === '97' ? 0.9 : 1) }]} text={displayText} />
+              </ScrollView>
               </View>
 
               {/* Virtue - fixed */}
               <View style={styles.modalVirtueWrap}>
                 <View style={styles.modalVirtueDivider} />
                 <View style={styles.virtueHeaderRow}>
-                  <Pressable onPress={() => addHasanat(verseLetterCount(item) * 10)} style={styles.hasanatRewardBtn}>
+                  <Pressable onPress={() => addHasanat(verseLetterCount(countText) * 10)} style={styles.hasanatRewardBtn}>
                     <Text style={styles.hasanatRewardText}>
-                      +{verseLetterCount(item) * 10} حسنة لكل مرة
+                      +{verseLetterCount(countText) * 10} حسنة لكل مرة
                     </Text>
                   </Pressable>
                   <Text style={styles.modalVirtueLabel}>فضل الآية</Text>
@@ -316,7 +371,21 @@ function MemorizationCard({ item, isMemorized, onPress }: {
 
 export default function RankingsScreen() {
   const insets = useSafeAreaInsets();
-  const { isDevUnlocked, toggleDevUnlock } = useApp();
+  const { isDevUnlocked, toggleDevUnlock, tourTarget, tourTick } = useApp();
+  const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
+  const highlightRef = useRef<View | null>(null);
+  const listRef = useRef<View | null>(null);
+  const lockedCardRef = useRef<View | null>(null);
+
+  useEffect(() => {
+    if (tourTarget === TOUR_TARGETS.rankings) {
+      ensureVisible(TOUR_TARGETS.rankings, highlightRef.current);
+    } else if (tourTarget === TOUR_TARGETS.verseList) {
+      ensureVisible(TOUR_TARGETS.verseList, listRef.current);
+    } else if (tourTarget === TOUR_TARGETS.lockedVerse) {
+      ensureVisible(TOUR_TARGETS.lockedVerse, lockedCardRef.current);
+    }
+  }, [tourTarget, tourTick, ensureVisible]);
   const [memorizedIds, setMemorizedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'memorized' | 'remaining'>('all');
   const [selectedItem, setSelectedItem] = useState<VerseItem | null>(null);
@@ -340,6 +409,8 @@ export default function RankingsScreen() {
     if (activeFilter === 'remaining') return !memorizedIds.includes(v.id);
     return true;
   });
+
+  let lockedCardsSeen = 0;
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((data) => {
@@ -391,9 +462,12 @@ export default function RankingsScreen() {
 
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100, paddingHorizontal: 14 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollOffset.current = e.nativeEvent.contentOffset.y; }}
         >
           {/* Header */}
           <Animated.View entering={FadeInUp.duration(500)} style={styles.header}>
@@ -404,6 +478,7 @@ export default function RankingsScreen() {
           </Animated.View>
 
           {/* Dashboard / Filter Tabs */}
+          <View ref={(el) => { highlightRef.current = el; }}>
           <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.dashboard}>
             <LinearGradient
               colors={['rgba(212,175,55,0.12)', 'rgba(2,26,19,0.8)']}
@@ -453,6 +528,7 @@ export default function RankingsScreen() {
               </View>
             </View>
           </Animated.View>
+          </View>
 
           {/* Motivational card */}
           <Animated.View entering={FadeInUp.delay(150).duration(500)} style={styles.motivationCard}>
@@ -462,14 +538,21 @@ export default function RankingsScreen() {
           </Animated.View>
 
           {/* List */}
-          <Text style={styles.sectionTitle}>قائمة الحفظ</Text>
+          <View ref={(el) => { listRef.current = el; }}>
+            <Text style={styles.sectionTitle}>قائمة الحفظ</Text>
+          </View>
 
           {filteredVerses.map((item) => {
             const unlocked = isVerseUnlocked(item.order);
             if (!unlocked && activeFilter === 'all') {
+              lockedCardsSeen += 1;
+              const isFirstLocked = lockedCardsSeen === 1;
               return (
                 <Animated.View key={item.id} entering={FadeInUp.duration(400)}>
-                    <View style={styles.lockedCard}>
+                    <View
+                      ref={isFirstLocked ? (el) => { lockedCardRef.current = el; } : undefined}
+                      style={styles.lockedCard}
+                    >
                     <MaterialIcons name="lock-outline" size={24} color="rgba(255,255,255,0.2)" />
                     <Text style={styles.lockedCardTitle}>{item.title}</Text>
                   </View>
@@ -798,6 +881,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.06)',
   },
   modalVersesText: {
+    fontFamily: 'ScheherazadeNew',
     fontWeight: '600',
     color: 'rgba(255,255,255,0.9)',
     writingDirection: 'rtl',
@@ -908,6 +992,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.3)',
     writingDirection: 'rtl',
+  },
+  recitationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    padding: 2,
+  },
+  recitationBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  recitationBtnActive: {
+    backgroundColor: 'rgba(212,175,55,0.2)',
+  },
+  recitationBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.35)',
+    writingDirection: 'rtl',
+  },
+  recitationBtnTextActive: {
+    color: theme.gold,
   },
   fontSizeRow: {
     flexDirection: 'row',

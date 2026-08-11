@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { useApp } from '../../contexts/AppContext';
+import { useTourMeasure } from '../../hooks/useTourMeasure';
+import { TOUR_TARGETS } from '../../constants/tour';
 import { theme } from '../../constants/theme';
 import { CARD_BADGE_DEFINITIONS, getCurrentRank, TIER_INFO, CardBadgeDef } from '../../constants/badges';
 import { dhikrItems } from '../../services/mockData';
@@ -25,8 +27,16 @@ const GOAL_OPTIONS = [500, 1000, 2000] as const;
 export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userName, epithet, dhikrCounts, getTotalGlobalDhikr, getTodayCount, computeStreak, computeAllTimePeak, dailyGoal, setDailyGoal, isCardUnlocked } = useApp();
+  const { userName, epithet, dhikrCounts, getTotalGlobalDhikr, getTodayCount, computeStreak, computeAllTimePeak, dailyGoal, setDailyGoal, isCardUnlocked, tourTarget, tourTick } = useApp();
+  const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
   const { showAlert } = useAlert();
+  const highlightRef = useRef<View | null>(null);
+
+  useEffect(() => {
+    if (tourTarget === TOUR_TARGETS.badges) {
+      ensureVisible(TOUR_TARGETS.badges, highlightRef.current);
+    }
+  }, [tourTarget, tourTick, ensureVisible]);
 
   const [badgeModal, setBadgeModal] = useState<{
     visible: boolean;
@@ -114,11 +124,15 @@ export default function BadgesScreen() {
 
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100, paddingHorizontal: 16 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollOffset.current = e.nativeEvent.contentOffset.y; }}
         >
           {/* Interactive Faith Dashboard Header */}
+          <View ref={(el) => { highlightRef.current = el; }}>
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.dashboardCard}>
             <LinearGradient
               colors={['rgba(212,175,55,0.12)', 'rgba(2,26,19,0.95)']}
@@ -195,6 +209,7 @@ export default function BadgesScreen() {
               </View>
             </View>
           </Animated.View>
+          </View>
 
           <Text style={styles.sectionTitle}>
             الأوسمة — بطاقة تلو الأخرى
