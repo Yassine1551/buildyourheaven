@@ -13,6 +13,7 @@ import {
   Switch,
   Share,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -35,12 +36,14 @@ import { captureRef } from 'react-native-view-shot';
 import * as FileSystem from 'expo-file-system';
 import { useAlert } from '@/template';
 import { useApp } from '../../contexts/AppContext';
+import CloudBadge from '../../components/CloudBadge';
 import { getAdhkarSlotAt } from '../../services/adhkarNotifications';
 import { dhikrItems, DhikrItem, statItems, formatNumber, formatArabicNumber, formatCompactNumber, formatExtraLife } from '../../services/mockData';
 import { DHIKR_BENEFITS_POOL } from '../../constants/benefits';
 import { CARD_BADGE_DEFINITIONS, TIER_INFO } from '../../constants/badges';
 import { theme } from '../../constants/theme';
 import { TOUR_TARGETS } from '../../constants/tour';
+import { COUNTRIES, getCountryByCode } from '../../constants/countries';
 import { useTourMeasure } from '../../hooks/useTourMeasure';
 import WirdSettingsModal from '../../components/WirdSettingsModal';
 
@@ -110,7 +113,7 @@ export default function DashboardScreen() {
   const { showAlert } = useAlert();
   const {
     hasanat, stats, getElapsedTime, getTargetProgress,
-    dhikrCounts, level, istiqama, rankTitle, userName,
+    dhikrCounts, istiqama, userName,
     showWelcome, loaded, setUserName, dismissWelcome, isCardUnlocked,
     getUnlockRequirement,
     celebrationQueue, clearFirstCelebration,
@@ -125,7 +128,8 @@ export default function DashboardScreen() {
     wirdConfig, wirdCounts,
     setOnboardingDone, onboardingDone,
     tourTarget, tourTick,
-    cloudUser,
+    country, setCountry,
+    cloudUser, linkGoogle, cloudLoading, cloudError, unlinkGoogle,
   } = useApp();
 
   const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
@@ -144,6 +148,8 @@ export default function DashboardScreen() {
   const [customNameInput, setCustomNameInput] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
   const [welcomeGender, setWelcomeGender] = useState<'male' | 'female' | ''>('');
+  const [welcomeCountry, setWelcomeCountry] = useState('');
+  const [showCountryList, setShowCountryList] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [tempTargetYears, setTempTargetYears] = useState(60);
@@ -338,6 +344,7 @@ export default function DashboardScreen() {
     if (customNameInput.trim()) {
       setUserName(customNameInput.trim());
       if (welcomeGender) setGender(welcomeGender);
+      if (welcomeCountry) setCountry(welcomeCountry);
       dismissWelcome();
     }
   };
@@ -348,6 +355,10 @@ export default function DashboardScreen() {
       setShowNameInput(true);
     }
   }, [showWelcome, onboardingDone, cloudUser]);
+
+  const onWelcomeGoogleLink = () => {
+    linkGoogle().catch(() => {});
+  };
 
   const handleDrawerNavigate = (route: string) => {
     setDrawerOpen(false);
@@ -495,7 +506,7 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg-pattern.png')}
+        source={require('../../assets/images/bg-pattern.webp')}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
       />
@@ -527,6 +538,7 @@ export default function DashboardScreen() {
                 >
                   <MaterialIcons name={vibrationEnabled ? 'vibration' : 'smartphone'} size={18} color={vibrationEnabled ? theme.textSecondary : '#EF4444'} />
                 </Pressable>
+                <CloudBadge onPress={() => setShowSettingsModal(true)} />
               </View>
               <View style={styles.hasanatCounterWrap} ref={(el) => { homeRefs.current.hasanat = el; }}>
                 <View style={styles.hasanatLabelRow}>
@@ -1093,6 +1105,24 @@ export default function DashboardScreen() {
 
             {!showNameInput ? (
               <>
+                {!cloudUser && (
+                  <>
+                    <Pressable
+                      onPress={onWelcomeGoogleLink}
+                      disabled={cloudLoading}
+                      style={({ pressed }) => [styles.welcomeGoogleBtn, pressed && { opacity: 0.7 }]}
+                    >
+                      <MaterialIcons name="email" size={20} color="#333" />
+                      <Text style={styles.welcomeGoogleBtnText}>
+                        {cloudLoading ? 'جاري الاتصال...' : 'اتصل بالبريد الإلكتروني'}
+                      </Text>
+                    </Pressable>
+                    <Text style={styles.welcomeGoogleSub}>لحفظ رصيدك</Text>
+                    {cloudError && (
+                      <Text style={styles.welcomeGoogleError}>{cloudError}</Text>
+                    )}
+                  </>
+                )}
                 <Pressable
                   onPress={() => {
                     const gender = welcomeGender || 'male';
@@ -1170,6 +1200,46 @@ export default function DashboardScreen() {
                     <Text style={[styles.welcomeGenderTextSmall, welcomeGender === 'female' && styles.welcomeGenderTextActive]}>أنثى</Text>
                   </Pressable>
                 </View>
+
+                {/* Country selector (below gender) */}
+                <Pressable
+                  onPress={() => setShowCountryList((v) => !v)}
+                  style={({ pressed }) => [styles.countryField, showCountryList && styles.countryFieldActive, pressed && { opacity: 0.8 }]}
+                >
+                  {welcomeCountry && getCountryByCode(welcomeCountry) ? (
+                    <View style={styles.countryOptionInner}>
+                      <Text style={styles.countryOptionFlag}>{getCountryByCode(welcomeCountry)!.flag}</Text>
+                      <Text style={styles.countryFieldText}>{getCountryByCode(welcomeCountry)!.name}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.countryFieldText}>اختر دولتك</Text>
+                  )}
+                  <MaterialIcons name={showCountryList ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={20} color="rgba(6,78,59,0.7)" />
+                </Pressable>
+                {showCountryList && (
+                  <View style={styles.countryList}>
+                    <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+                      {COUNTRIES.map((c) => (
+                        <Pressable
+                          key={c.code}
+                          onPress={() => { setWelcomeCountry(c.code); setShowCountryList(false); }}
+                          style={({ pressed }) => [
+                            styles.countryOption,
+                            welcomeCountry === c.code && styles.countryOptionActive,
+                            pressed && { backgroundColor: 'rgba(6,78,59,0.08)' },
+                          ]}
+                        >
+                          <View style={styles.countryOptionInner}>
+                            <Text style={styles.countryOptionFlag}>{c.flag}</Text>
+                            <Text style={styles.countryOptionText}>{c.name}</Text>
+                          </View>
+                          {welcomeCountry === c.code && <MaterialIcons name="check" size={18} color="#064E3B" />}
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
                 <Pressable
                   onPress={handleSubmitCustomName}
                   style={({ pressed }) => [styles.welcomeBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
@@ -1270,7 +1340,6 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.settingsUserInfo}>
                   <Text style={styles.settingsUserName}>{userName || 'مجهول'}</Text>
-                  <Text style={styles.settingsUserRank}>{rankTitle} • الدرجة {formatArabicNumber(level, useWesternNumerals)}</Text>
                 </View>
                 <MaterialIcons name="edit" size={18} color="#999" />
               </Pressable>
@@ -1353,6 +1422,61 @@ export default function DashboardScreen() {
                 </View>
                 <MaterialIcons name="help-outline" size={22} color="#064E3B" />
               </Pressable>
+
+              <View style={styles.settingsSep} />
+
+              {/* Google connect state */}
+              {cloudUser ? (
+                <View style={styles.googleReminderWrap}>
+                  <View style={[styles.googleReminderCard, styles.googleConnectedCard]}>
+                    <View style={[styles.googleReminderIcon, { backgroundColor: '#10B981' }]}>
+                      <MaterialIcons name="cloud-done" size={22} color="#FFF" />
+                    </View>
+                    <View style={styles.settingTextCol}>
+                      <Text style={styles.settingLabel}>متصل بحساب جيمايل</Text>
+                      <Text style={styles.settingDesc}>
+                        {[cloudUser.name, cloudUser.email].filter(Boolean).join(' • ') || 'رصيدك محفوظ'} — رصيدك ومراجعاتك تُحفظ
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => { unlinkGoogle().catch(() => {}); }}
+                      style={({ pressed }) => [styles.unlinkBtn, pressed && { opacity: 0.6 }]}
+                      hitSlop={8}
+                    >
+                      <MaterialIcons name="link-off" size={20} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.googleReminderWrap}>
+                  {cloudLoading ? (
+                    <View style={styles.googleReminderCard}>
+                      <ActivityIndicator size="small" color="#064E3B" />
+                      <View style={styles.settingTextCol}>
+                        <Text style={styles.settingLabel}>جاري الاتصال بجيمايل...</Text>
+                        <Text style={styles.settingDesc}>يُرجى اختيار الحساب في المتصفح</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => { linkGoogle().catch(() => {}); }}
+                      style={({ pressed }) => [styles.googleReminderCard, pressed && { opacity: 0.8 }]}
+                    >
+                      <View style={styles.googleReminderIcon}>
+                        <MaterialIcons name="cloud-upload" size={22} color="#FFF" />
+                      </View>
+                      <View style={styles.settingTextCol}>
+                        <Text style={styles.settingLabel}>اربط حساب جيمايل</Text>
+                        <Text style={styles.settingDesc}>ليُحفظ رصيد حسناتك ويراجعاتك معك أينما كنت</Text>
+                      </View>
+                      <MaterialIcons name="chevron-left" size={20} color="#064E3B" />
+                    </Pressable>
+                  )}
+                  {cloudError && (
+                    <Text style={styles.googleReminderError}>{cloudError}</Text>
+                  )}
+                </View>
+              )}
 
               <View style={styles.settingsSep} />
 
@@ -2401,6 +2525,40 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 18,
   },
+  welcomeGoogleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#DDD',
+    marginBottom: 10,
+  },
+  welcomeGoogleBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
+  },
+  welcomeGoogleSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#999',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    marginBottom: 12,
+  },
+  welcomeGoogleError: {
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+    lineHeight: 18,
+  },
   welcomeBtn: {
     width: '100%',
     height: 50,
@@ -2482,6 +2640,70 @@ const styles = StyleSheet.create({
   },
   welcomeGenderTextActive: {
     color: '#FFF',
+  },
+  countryField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    direction: 'rtl',
+    width: '100%',
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(6,78,59,0.3)',
+    backgroundColor: 'rgba(6,78,59,0.06)',
+    paddingHorizontal: 16,
+    marginBottom: 6,
+  },
+  countryFieldActive: {
+    borderColor: '#064E3B',
+    backgroundColor: 'rgba(6,78,59,0.1)',
+  },
+  countryFieldText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#064E3B',
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  countryList: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(6,78,59,0.2)',
+    backgroundColor: '#FFF',
+    marginBottom: 12,
+    paddingVertical: 4,
+    maxHeight: 190,
+    direction: 'rtl',
+  },
+  countryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    direction: 'rtl',
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+  },
+  countryOptionInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    direction: 'rtl',
+    gap: 8,
+    flex: 1,
+  },
+  countryOptionActive: {
+    backgroundColor: 'rgba(6,78,59,0.1)',
+  },
+  countryOptionFlag: {
+    fontSize: 18,
+  },
+  countryOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#064E3B',
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
   welcomeBackBtn: {
     alignSelf: 'center',
@@ -2583,7 +2805,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFF',
     borderRadius: 24,
-    padding: 24,
+    padding: 14,
     borderWidth: 2,
     borderColor: 'rgba(212,175,55,0.25)',
     elevation: 16,
@@ -2598,7 +2820,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingsTitle: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '800',
     color: '#1a1a1a',
     writingDirection: 'rtl',
@@ -2614,7 +2836,7 @@ const styles = StyleSheet.create({
   settingsSep: {
     height: 1,
     backgroundColor: '#EEE',
-    marginVertical: 16,
+    marginVertical: 8,
   },
   settingsUserRow: {
     flexDirection: 'row',
@@ -2653,7 +2875,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 12,
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   settingTextCol: {
     flex: 1,
@@ -2674,7 +2896,45 @@ const styles = StyleSheet.create({
   // Reset section in settings
   resetSection: {
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  googleReminderWrap: {
+    width: '100%',
+    marginTop: 2,
+  },
+  googleReminderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(5,150,105,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(5,150,105,0.25)',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  googleConnectedCard: {
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderColor: 'rgba(16,185,129,0.4)',
+  },
+  unlinkBtn: {
+    padding: 6,
+  },
+  googleReminderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#064E3B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleReminderError: {
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 18,
   },
   resetSectionTitle: {
     fontSize: 13,

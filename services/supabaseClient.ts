@@ -11,7 +11,10 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const REDIRECT_URI = AuthSession.makeRedirectUri();
+export const REDIRECT_URI = AuthSession.makeRedirectUri({
+  scheme: 'mihrab',
+  path: 'auth/callback',
+});
 
 console.log('[supabase] REDIRECT_URI =', REDIRECT_URI);
 console.log('[supabase] أضف هذا الرابط إلى Supabase ← Authentication ← URL Configuration ← Redirect URLs');

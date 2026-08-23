@@ -21,6 +21,7 @@ import { theme } from '../../constants/theme';
 import { useTourMeasure } from '../../hooks/useTourMeasure';
 import { TOUR_TARGETS } from '../../constants/tour';
 import { useApp } from '../../contexts/AppContext';
+import CloudBadge from '../../components/CloudBadge';
 import { ADHKAR_SCHEDULE, loadNotificationSettings, saveNotificationSettings, scheduleAllAdhkar, AdhkarNotificationSettings, AdhkarType } from '../../services/adhkarNotifications';
 
 Notifications.setNotificationHandler({
@@ -238,7 +239,7 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg-pattern.png')}
+        source={require('../../assets/images/bg-pattern.webp')}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
       />
@@ -263,6 +264,7 @@ export default function NotificationsScreen() {
             </Pressable>
             <View style={styles.titleWithBadge}>
               <Text style={styles.pageTitle}>التنبيهات</Text>
+              <CloudBadge />
               {unreadCount > 0 ? (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadBadgeText}>{unreadCount}</Text>

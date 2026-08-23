@@ -334,7 +334,7 @@ export default function OnboardingTour({ onClose }: { onClose: () => void }) {
         onPress={finishTour}
         style={({ pressed }) => [
           styles.skipBtn,
-          { top: insets.top + 10 },
+          { top: insets.top + 58 },
           pressed && { opacity: 0.6 },
         ]}
         hitSlop={10}

@@ -16,6 +16,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { useApp } from '../../contexts/AppContext';
+import CloudBadge from '../../components/CloudBadge';
 import { useTourMeasure } from '../../hooks/useTourMeasure';
 import { TOUR_TARGETS } from '../../constants/tour';
 import { theme } from '../../constants/theme';
@@ -116,7 +117,7 @@ export default function BadgesScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg-pattern.png')}
+        source={require('../../assets/images/bg-pattern.webp')}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
       />
@@ -141,7 +142,10 @@ export default function BadgesScreen() {
               end={{ x: 1, y: 1 }}
             />
             <View style={styles.dashboardInner}>
-              <Text style={styles.greeting}>تقبل الله طاعتك</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Text style={styles.greeting}>تقبل الله طاعتك</Text>
+                <CloudBadge />
+              </View>
               <Text style={styles.userNameText}>{displayName}</Text>
 
               {/* Stats row: total + streak + peak */}

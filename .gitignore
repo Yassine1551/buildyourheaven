@@ -42,3 +42,14 @@ app-example
 
 # IDE
 .idea/
+
+# Signing keys (never commit)
+*.keystore
+
+# Build logs / temp scripts
+*.log
+build*.log
+build_direct.bat
+scripts/tmp-*.txt
+scripts/*-temp.mjs
+scripts/parse-test.mjs

@@ -16,6 +16,7 @@ export interface GameSnapshot {
   wirdCounts: Record<string, number>;
   wirdDate: string;
   gender: string;
+  country: string;
   epithet: string;
   badges: string[];
   level: number;

@@ -86,7 +86,7 @@ export default function WirdScreen() {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dy) < 40,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderGrant: () => {
         startX.value = slideX.value;
       },
@@ -582,9 +582,9 @@ const styles = StyleSheet.create({
   },
   dhikrTextScrollContent: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     flexGrow: 1,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   dhikrText: {
     fontSize: 24,

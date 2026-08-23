@@ -101,6 +101,7 @@ export async function scheduleAllAdhkar(settings: AdhkarNotificationSettings) {
     const { hour, minute } = settings.times[type];
     await Notifications.scheduleNotificationAsync({
       identifier,
+      channelId: 'adhkar',
       content: { title, body, sound: true, data: { route } },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -114,13 +115,16 @@ export async function scheduleAllAdhkar(settings: AdhkarNotificationSettings) {
 export async function clearExpiredNotifications() {
   try {
     const presented = await Notifications.getPresentedNotificationsAsync();
-    const now = Date.now();
-    const staleMs = 10 * 60 * 60 * 1000;
+    // Anything delivered before the start of the current local day is stale
+    // (e.g. yesterday's evening/sleep adhkar still showing in the morning).
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startMs = startOfToday.getTime();
 
     for (const notification of presented) {
       const deliveredAt = notification.date;
       if (!deliveredAt) continue;
-      if (now - deliveredAt > staleMs) {
+      if (deliveredAt < startMs) {
         await Notifications.dismissNotificationAsync(notification.request.identifier);
       }
     }

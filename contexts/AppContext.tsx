@@ -87,6 +87,8 @@ interface AppContextType extends AppState {
   deferReview: () => void;
   gender: 'male' | 'female' | '';
   setGender: (g: 'male' | 'female') => void;
+  country: string;
+  setCountry: (c: string) => void;
   epithet: string;
   setEpithet: (e: string) => void;
   onboardingDone: boolean;
@@ -175,7 +177,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [wirdConfig, setWirdConfig] = useState<WirdDhikrItem[]>(DEFAULT_WIRD_ITEMS);
   const [wirdCounts, setWirdCounts] = useState<Record<string, number>>({});
   const [wirdDate, setWirdDate] = useState<string>('');
+  const [morningCountsDate, setMorningCountsDate] = useState<string>('');
+  const [eveningCountsDate, setEveningCountsDate] = useState<string>('');
   const [gender, setGenderState] = useState<'male' | 'female' | ''>('');
+  const [country, setCountryState] = useState('');
   const [epithet, setEpithetState] = useState('');
   const [badges, setBadges] = useState<string[]>([]);
   const [isDevUnlocked, setIsDevUnlocked] = useState(false);
@@ -214,9 +219,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, [darkAuto]);
 
+  // Daily reset: clear adhkar counters when the calendar day changes (e.g. at midnight)
+  // even if the app stays open in the background.
+  useEffect(() => {
+    if (!loaded) return;
+    const checkDay = () => {
+      const today = getTodayDateString();
+      if (morningCountsDate && morningCountsDate !== today) {
+        setMorningCounts({});
+        setMorningCountsDate(today);
+      }
+      if (eveningCountsDate && eveningCountsDate !== today) {
+        setEveningCounts({});
+        setEveningCountsDate(today);
+      }
+      if (wirdDate && wirdDate !== today) {
+        setWirdCounts({});
+        setWirdDate(today);
+      }
+    };
+    checkDay();
+    const id = setInterval(checkDay, 60000);
+    return () => clearInterval(id);
+  }, [loaded, morningCountsDate, eveningCountsDate, wirdDate, getTodayDateString]);
+
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, welcomeIntroDone, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges, recitation, onboardingDone]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, welcomeIntroDone, level, istiqama, country, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges, recitation, onboardingDone]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -227,7 +256,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [savedHasanat, savedDhikr, savedInternal, savedAlfHasanaDate, savedHattKhatayaDate, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate] = await Promise.all([        AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
+      const [savedHasanat, savedDhikr, savedInternal, savedAlfHasanaDate, savedHattKhatayaDate, savedStats, savedName, savedGender, savedEpithet, savedBadges, savedWelcome, savedLevel, savedIstiqama, savedUnlocked, savedSound, savedVibration, savedNumerals, savedDarkMode, savedDarkAuto, savedTargetYears, savedMorningCounts, savedSleepCounts, savedDailyLog, savedDailyGoal, savedWirdConfig, savedWirdCounts, savedWirdDate, savedMorningCountsDate, savedEveningCountsDate] = await Promise.all([        AsyncStorage.getItem(APP_CONFIG.storageKeys.hasanat),
         AsyncStorage.getItem(APP_CONFIG.storageKeys.dhikrCounts),
         AsyncStorage.getItem('internal_dhikr_counts'),
         AsyncStorage.getItem('alf_hasana_date'),
@@ -254,6 +283,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem('wird_config'),
         AsyncStorage.getItem('wird_counts'),
         AsyncStorage.getItem('wird_date'),
+        AsyncStorage.getItem('morning_counts_date'),
+        AsyncStorage.getItem('evening_counts_date'),
         AsyncStorage.getItem('recitation'),
       ]);
       if (savedHasanat) setHasanat(JSON.parse(savedHasanat));
@@ -326,6 +357,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setWirdCounts({});
         setWirdDate(today);
       }
+      if (!savedMorningCountsDate || savedMorningCountsDate !== today) {
+        setMorningCounts({});
+        setMorningCountsDate(today);
+      } else if (savedMorningCountsDate) {
+        setMorningCountsDate(savedMorningCountsDate);
+      }
+      if (!savedEveningCountsDate || savedEveningCountsDate !== today) {
+        setEveningCounts({});
+        setEveningCountsDate(today);
+      } else if (savedEveningCountsDate) {
+        setEveningCountsDate(savedEveningCountsDate);
+      }
       const savedEveningCounts = await AsyncStorage.getItem('evening_counts');
       if (savedEveningCounts) setEveningCounts(JSON.parse(savedEveningCounts));
       const savedWakeupCounts = await AsyncStorage.getItem('wakeup_counts');
@@ -338,6 +381,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedOnboarding !== null) setOnboardingDoneState(JSON.parse(savedOnboarding) === true);
       const savedIntroDone = await AsyncStorage.getItem('welcome_intro_done');
       if (savedIntroDone !== null) setWelcomeIntroDoneState(JSON.parse(savedIntroDone) === true);
+      const savedCountry = await AsyncStorage.getItem('user_country');
+      if (savedCountry) setCountryState(savedCountry);
       const savedCloudUser = await AsyncStorage.getItem('cloud_user');
       if (savedCloudUser) {
         try {
@@ -363,6 +408,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem(APP_CONFIG.storageKeys.stats, JSON.stringify(stats)),
         AsyncStorage.setItem('user_name', userName),
         AsyncStorage.setItem('show_welcome', JSON.stringify(showWelcome)),
+        AsyncStorage.setItem('user_country', country),
         AsyncStorage.setItem('user_level', JSON.stringify(level)),
         AsyncStorage.setItem('user_istiqama', JSON.stringify(istiqama)),
         AsyncStorage.setItem('unlocked_cards', JSON.stringify(unlockedCards)),
@@ -383,6 +429,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('wird_config_version', String(WIRD_CONFIG_VERSION)),
         AsyncStorage.setItem('wird_counts', JSON.stringify(wirdCounts)),
         AsyncStorage.setItem('wird_date', wirdDate),
+        AsyncStorage.setItem('morning_counts_date', morningCountsDate),
+        AsyncStorage.setItem('evening_counts_date', eveningCountsDate),
         AsyncStorage.setItem('recitation', recitation),
         AsyncStorage.setItem('onboarding_seen', JSON.stringify(onboardingDone)),
         AsyncStorage.setItem('welcome_intro_done', JSON.stringify(welcomeIntroDone)),
@@ -410,6 +458,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     wirdDate,
     gender,
     epithet,
+    country,
     badges,
     level,
     istiqama,
@@ -426,7 +475,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     reviewState,
     onboardingDone,
     showWelcome,
-  }), [userName, hasanat, dhikrCounts, internalDhikrCounts, stats, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, gender, epithet, badges, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, recitation, reviewState, onboardingDone, showWelcome]);
+  }), [userName, hasanat, dhikrCounts, internalDhikrCounts, stats, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, gender, epithet, country, badges, level, istiqama, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, recitation, reviewState, onboardingDone, showWelcome]);
 
   const applySnapshot = useCallback((s: GameSnapshot) => {
     if (s.userName !== undefined) setUserNameState(s.userName);
@@ -443,6 +492,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (s.wirdDate) setWirdDate(s.wirdDate);
     if (s.gender) setGenderState(s.gender as 'male' | 'female');
     if (s.epithet) setEpithetState(s.epithet);
+    if (s.country) setCountryState(s.country);
     if (s.badges) setBadges(s.badges);
     if (s.level !== undefined) setLevel(s.level);
     if (s.istiqama !== undefined) setIstiqama(s.istiqama);
@@ -924,6 +974,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setWelcomeIntroDone = useCallback((v: boolean) => { setWelcomeIntroDoneState(v); }, []);
 
   const setGender = useCallback((g: 'male' | 'female') => { setGenderState(g); }, []);
+  const setCountry = useCallback((c: string) => { setCountryState(c); }, []);
   const setEpithet = useCallback((e: string) => { setEpithetState(e); }, []);
 
   const isCardUnlocked = useCallback((dhikrId: string) => {
@@ -1028,6 +1079,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserNameState('');
     setShowWelcome(true);
     setWelcomeIntroDoneState(false);
+    setCountryState('');
     setGenderState('');
     setEpithetState('');
     setBadges([]);
@@ -1079,7 +1131,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateWirdConfig, incrementWirdDhikr,
         getTotalGlobalDhikr, isDevUnlocked, toggleDevUnlock,
         reviewState, shouldShowReview, markReviewAsRated, deferReview,
-        gender, setGender, epithet, setEpithet, badges, loaded,
+        gender, setGender, country, setCountry, epithet, setEpithet, badges, loaded,
         dailyGoal, setDailyGoal, getTodayCount, computeStreak, computeAllTimePeak,
         onboardingDone, setOnboardingDone,
         tourRects, setTourRects, tourTarget, tourTick, requestTourMeasure,

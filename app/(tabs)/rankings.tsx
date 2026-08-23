@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { theme } from '../../constants/theme';
 import { useApp } from '../../contexts/AppContext';
+import CloudBadge from '../../components/CloudBadge';
 import { useTourMeasure } from '../../hooks/useTourMeasure';
 import { TOUR_TARGETS } from '../../constants/tour';
 import { formatCompactNumber } from '../../services/mockData';
@@ -471,9 +472,12 @@ export default function RankingsScreen() {
         >
           {/* Header */}
           <Animated.View entering={FadeInUp.duration(500)} style={styles.header}>
-            <Pressable onPress={handleTitleTap}>
-              <Text style={styles.pageTitle}>آيات للحفظ</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Pressable onPress={handleTitleTap}>
+                <Text style={styles.pageTitle}>آيات للحفظ</Text>
+              </Pressable>
+              <CloudBadge />
+            </View>
             <Text style={styles.pageSubtitle}>احفظ كتاب الله وتمسك به</Text>
           </Animated.View>
 

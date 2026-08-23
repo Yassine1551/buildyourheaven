@@ -45,7 +45,7 @@ export default function QuranScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg-pattern.png')}
+        source={require('../../assets/images/bg-pattern.webp')}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
       />

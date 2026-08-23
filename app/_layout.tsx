@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, View, StyleSheet } from 'react-native';
+import { AppState, AppStateStatus, View, StyleSheet, Alert, Linking, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Font from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
@@ -25,6 +26,7 @@ Notifications.setNotificationHandler({
 export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const [showLogo, setShowLogo] = useState(true);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,18 +38,61 @@ export default function RootLayout() {
       UthmanicWarsh: require('../assets/fonts/UthmanicWarsh.ttf'),
     }).catch(() => {});
 
+    // Create the Android notification channel (required for notifications to appear on Android 8+)
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('adhkar', {
+        name: 'أذكار وبينات',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#0B1E16',
+      }).catch(() => {});
+    }
+
+    // Request notification permission; if denied, remind periodically to enable it
+    (async () => {
+      try {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'undetermined') {
+          await Notifications.requestPermissionsAsync();
+        } else if (status === 'denied') {
+          const last = await AsyncStorage.getItem('notifReminderLastShown');
+          const now = Date.now();
+          const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+          if (!last || now - Number(last) > THREE_DAYS) {
+            Alert.alert(
+              'فّعل الإشعارات 🔔',
+              'لتتلقى تذكيرات الأذكار اليومية، يرجى السماح للإشعارات من إعدادات التطبيق.',
+              [
+                { text: 'لاحقاً', style: 'cancel' },
+                { text: 'فتح الإعدادات', onPress: () => Linking.openSettings() },
+              ]
+            );
+            await AsyncStorage.setItem('notifReminderLastShown', String(now));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    })();
+
     loadNotificationSettings().then((settings) => scheduleAllAdhkar(settings)).catch(() => {});
 
     const notificationSub = Notifications.addNotificationResponseReceivedListener((response) => {
       const route = response.notification.request.content.data?.route as string | undefined;
+      // Remove the tapped notification from the shade immediately.
+      Notifications.dismissNotificationAsync(response.notification.request.identifier).catch(() => {});
       if (route) {
-        router.push(route as never);
+        setPendingRoute(route);
       }
     });
 
     Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response?.notification.request.content.data?.route) {
-        router.push(response.notification.request.content.data.route as never);
+      const route = response?.notification.request.content.data?.route as string | undefined;
+      if (response) {
+        Notifications.dismissNotificationAsync(response.notification.request.identifier).catch(() => {});
+      }
+      if (route) {
+        setPendingRoute(route);
       }
     });
 
@@ -71,21 +116,31 @@ export default function RootLayout() {
     <AlertProvider>
       <SafeAreaProvider>
         <AppProvider>
-          <AppShell showLogo={showLogo} />
+          <AppShell showLogo={showLogo} pendingRoute={pendingRoute} setPendingRoute={setPendingRoute} />
         </AppProvider>
       </SafeAreaProvider>
     </AlertProvider>
   );
 }
 
-function AppShell({ showLogo }: { showLogo: boolean }) {
+function AppShell({ showLogo, pendingRoute, setPendingRoute }: { showLogo: boolean; pendingRoute: string | null; setPendingRoute: (r: string | null) => void }) {
   const { loaded, onboardingDone, setOnboardingDone, welcomeIntroDone } = useApp();
+  const router = useRouter();
+
+  // Navigate to a deep-linked adhkar page only once the app (and its navigation
+  // container) is fully ready. This fixes cold-start taps that opened the wrong page.
+  useEffect(() => {
+    if (pendingRoute && loaded) {
+      router.push(pendingRoute as never);
+      setPendingRoute(null);
+    }
+  }, [pendingRoute, loaded, router, setPendingRoute]);
 
   return (
     <>
       {showLogo && (
         <View style={styles.logoOverlay} pointerEvents="none">
-          <Image source={require('../assets/images/bg-pattern.png')} style={StyleSheet.absoluteFill} />
+          <Image source={require('../assets/images/bg-pattern.webp')} style={StyleSheet.absoluteFill} />
           <View style={styles.logoWrap}>
             <Image source={require('../assets/images/logo.png')} style={styles.splashLogo} />
             <LinearGradient

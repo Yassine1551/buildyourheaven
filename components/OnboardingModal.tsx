@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,13 +29,43 @@ export default function OnboardingModal() {
   } = useApp();
 
   const [step, setStep] = useState<'main' | 'loading'>('main');
+  const [retryHint, setRetryHint] = useState(false);
+  const cloudUserRef = useRef(cloudUser);
+
+  useEffect(() => {
+    cloudUserRef.current = cloudUser;
+  }, [cloudUser]);
+
+  useEffect(() => {
+    if (cloudUser) setStep('main');
+  }, [cloudUser]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        setTimeout(() => {
+          if (cloudUserRef.current) {
+            setStep('main');
+            return;
+          }
+          setStep((s) => {
+            if (s === 'loading') {
+              setRetryHint(true);
+              return 'main';
+            }
+            return s;
+          });
+        }, 3000);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
+    setRetryHint(false);
     setStep('loading');
-    const res = await linkGoogle();
-    if (!res.ok) {
-      setStep('main');
-    }
+    await linkGoogle();
+    setStep('main');
   }, [linkGoogle]);
 
   const handleContinue = useCallback(() => {
@@ -81,6 +112,9 @@ export default function OnboardingModal() {
 
                   {cloudError && (
                     <Text style={styles.errorText}>{cloudError}</Text>
+                  )}
+                  {retryHint && (
+                    <Text style={styles.retryText}>تعذر العودة من المتصفح. اضغط على الزر لإعادة المحاولة.</Text>
                   )}
                 </>
               )}
@@ -228,6 +262,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 4,
+    lineHeight: 20,
+  },
+  retryText: {
+    color: '#B45309',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 14,
     lineHeight: 20,
   },
 });

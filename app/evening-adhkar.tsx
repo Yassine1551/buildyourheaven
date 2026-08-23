@@ -53,8 +53,9 @@ export default function EveningAdhkarScreen() {
   const reversedItems = [...eveningAdhkarItems].reverse();
 
   const [activeIndex, setActiveIndex] = useState<number | null>(reversedItems.length - 1);
-  const [sessionCount, setSessionCount] = useState(0);
-  const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
+  const completedItems = new Set(
+    reversedItems.filter((i) => (eveningCounts[i.id] || 0) >= i.target).map((i) => i.id)
+  );
   const [showDalilModal, setShowDalilModal] = useState(false);
   const [dalilItem, setDalilItem] = useState<EveningDhikrItem | null>(null);
   const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
@@ -96,7 +97,7 @@ export default function EveningAdhkarScreen() {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dy) < 40,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderGrant: () => {
         startX.value = slideX.value;
       },
@@ -119,7 +120,6 @@ export default function EveningAdhkarScreen() {
           setTimeout(() => {
             activeIndexRef.current = newIndex;
             setActiveIndex(newIndex);
-            setSessionCount(0);
             setIsAutoAdvancing(false);
           }, 180);
         } else {
@@ -140,7 +140,6 @@ export default function EveningAdhkarScreen() {
     slideX.value = withTiming(-newIndex * SCREEN_WIDTH, { duration: 180 });
     setTimeout(() => {
       setActiveIndex(newIndex);
-      setSessionCount(0);
       setIsAutoAdvancing(false);
     }, 180);
   };
@@ -148,7 +147,6 @@ export default function EveningAdhkarScreen() {
   const handleOpenItem = (item: EveningDhikrItem) => {
     const idx = reversedItems.findIndex(d => d.id === item.id);
     setActiveIndex(idx);
-    setSessionCount(0);
     setIsAutoAdvancing(false);
     slideX.value = -idx * SCREEN_WIDTH;
   };
@@ -163,7 +161,6 @@ export default function EveningAdhkarScreen() {
       slideX.value = withTiming(-nextIndex * SCREEN_WIDTH, { duration: 180 });
       setTimeout(() => {
         setActiveIndex(nextIndex);
-        setSessionCount(0);
         setIsAutoAdvancing(false);
       }, 180);
     }
@@ -183,15 +180,13 @@ export default function EveningAdhkarScreen() {
       playTapSound();
     }
 
-    const newCount = sessionCount + 1;
-    setSessionCount(newCount);
+    const newCount = (eveningCounts[activeItem.id] || 0) + 1;
     incrementEveningDhikr(activeItem.id);
 
     if (newCount >= activeItem.target && !completedItems.has(activeItem.id)) {
       if (vibrationEnabled) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      setCompletedItems(prev => new Set([...prev, activeItem.id]));
       completeEveningDhikr(activeItem.id);
 
       setIsAutoAdvancing(true);
@@ -217,7 +212,7 @@ export default function EveningAdhkarScreen() {
   const overallProgress = activeIndex !== null ? (totalItems - activeIndex) / totalItems : 0;
 
   const activeItem = activeIndex !== null ? reversedItems[activeIndex] : null;
-  const activeProgress = activeItem ? Math.min(sessionCount / activeItem.target, 1) : 0;
+  const activeProgress = activeItem ? Math.min((eveningCounts[activeItem.id] || 0) / activeItem.target, 1) : 0;
   const radius = (RING_SIZE - STROKE_WIDTH) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - activeProgress * circumference;
@@ -350,7 +345,7 @@ export default function EveningAdhkarScreen() {
                           </Svg>
                           <View style={styles.counterInner}>
                             <Text style={styles.counterNumber}>
-                              {formatArabicNumber(isCenter ? sessionCount : 0, useWesternNumerals)}
+                              {formatArabicNumber(isCenter ? (eveningCounts[item.id] || 0) : 0, useWesternNumerals)}
                             </Text>
                             <Text style={styles.counterTarget}>
                               / {formatArabicNumber(item.target, useWesternNumerals)}
@@ -636,7 +631,7 @@ const styles = StyleSheet.create({
   },
   dhikrTextScrollContent: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     flexGrow: 1,
     paddingBottom: 16,
   },
