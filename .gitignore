@@ -45,6 +45,7 @@ app-example
 
 # Signing keys (never commit)
 *.keystore
+local.properties
 
 # Build logs / temp scripts
 *.log
