@@ -28,7 +28,7 @@ const GOAL_OPTIONS = [500, 1000, 2000] as const;
 export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userName, epithet, dhikrCounts, getTotalGlobalDhikr, getTodayCount, computeStreak, computeAllTimePeak, dailyGoal, setDailyGoal, isCardUnlocked, tourTarget, tourTick } = useApp();
+  const { userName, epithet, dhikrCounts, getTotalGlobalDhikr, getTodayCount, getStreakInfo, computeAllTimePeak, dailyGoal, setDailyGoal, isCardUnlocked, tourTarget, tourTick } = useApp();
   const { ensureVisible, scrollRef, scrollOffset } = useTourMeasure();
   const { showAlert } = useAlert();
   const highlightRef = useRef<View | null>(null);
@@ -51,7 +51,9 @@ export default function BadgesScreen() {
   const totalDhikr = getTotalGlobalDhikr();
   const displayName = epithet || userName || 'ياسين';
   const todayCount = getTodayCount();
-  const streak = computeStreak();
+  const streakInfo = getStreakInfo();
+  const streak = streakInfo.streak;
+  const showFreezeNotice = streakInfo.frozen;
   const peak = computeAllTimePeak();
   const dailyProgress = dailyGoal > 0 ? Math.min(todayCount / dailyGoal, 1) : 0;
 
@@ -166,6 +168,16 @@ export default function BadgesScreen() {
                   <Text style={styles.statLabel}>أعلى حصاد</Text>
                 </View>
               </View>
+
+              {/* Freeze streak notice: تظهر فقط بعد غياب يوم كامل (اليوم الموالي) */}
+              {showFreezeNotice && (
+                <View style={styles.freezeCard}>
+                  <MaterialIcons name="ac-unit" size={16} color="#7DD3FC" />
+                  <Text style={styles.freezeText}>
+                    سلسلتك ({streakInfo.streak} يوم) محفوظة بالتجميد — عُد اليوم قبل أن تُصفَّر 🌱
+                  </Text>
+                </View>
+              )}
 
               {/* Daily goal progress */}
               <View style={styles.dailyGoalWrap}>
@@ -488,6 +500,27 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     gap: 6,
+  },
+  freezeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(125,211,252,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(125,211,252,0.35)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  freezeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+    color: '#7DD3FC',
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
   dailyGoalHeader: {
     flexDirection: 'row',

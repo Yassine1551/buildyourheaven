@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     elevation: 14,
   },
   tipHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 10,
     marginBottom: 8,
@@ -395,6 +395,8 @@ const styles = StyleSheet.create({
     color: '#064E3B',
     fontSize: 18,
     fontWeight: '800',
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   tipBody: {
     color: '#334155',
@@ -420,6 +422,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
     fontWeight: '600',
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   tipNext: {
     flexDirection: 'row',

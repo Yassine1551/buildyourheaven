@@ -106,6 +106,7 @@ interface AppContextType extends AppState {
   setDailyGoal: (goal: number) => void;
   getTodayCount: () => number;
   computeStreak: () => number;
+  getStreakInfo: () => { streak: number; missedDays: number; frozen: boolean };
   computeAllTimePeak: () => number;
   cloudUser: GoogleUser | null;
   cloudLoading: boolean;
@@ -602,21 +603,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [getTodayDateString, dailyLog]);
 
   const computeStreak = useCallback(() => {
-    let streak = 0;
+    // عدد الأيام المتتالية التي حصل فيها ذكر على الأقل مرة واحدة.
+    // يبدأ من اليوم إن كان مفعّلاً، وإلا يبدأ من أمس (السلسلة مستمرة حتى لو لم يُذكر اليوم بعد).
     const today = new Date();
-    for (let i = 1; i <= 365; i++) {
+    const keyFor = (offset: number) => {
       const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const count = dailyLog[key] || 0;
-      if (count >= dailyGoal) {
+      d.setDate(d.getDate() - offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const todayActive = (dailyLog[keyFor(0)] || 0) > 0;
+    const start = todayActive ? 0 : 1;
+    let streak = 0;
+    for (let i = start; i <= 720; i++) {
+      const count = dailyLog[keyFor(i)] || 0;
+      if (count > 0) {
         streak++;
       } else {
         break;
       }
     }
     return streak;
-  }, [dailyLog, dailyGoal]);
+  }, [dailyLog]);
+
+  // معلومات السلسلة مع منطق تجميد الحماسة:
+  // - frozen: أصبح المستخدم غائباً يوماً كاملاً (أمس) لكن سلسلته محفوظة
+  // - إذا غاب 3 أيام متتالية كاملة تُصفَّر السلسلة
+  const getStreakInfo = useCallback(() => {
+    const today = new Date();
+    const keyFor = (offset: number) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const todayActive = (dailyLog[keyFor(0)] || 0) > 0;
+
+    let streak = 0;
+    const start = todayActive ? 0 : 1;
+    for (let i = start; i <= 720; i++) {
+      const count = dailyLog[keyFor(i)] || 0;
+      if (count > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    // عدد أيام الغياب الكاملة قبل اليوم (بدءاً من أمس) — يُحسب فقط إذا لم يكن اليوم مفعّلاً بعد
+    let missedDays = 0;
+    if (!todayActive) {
+      for (let j = 1; j <= 720; j++) {
+        const count = dailyLog[keyFor(j)] || 0;
+        if (count > 0) {
+          break;
+        }
+        missedDays++;
+      }
+    }
+
+    // التجميد: طالما اليوم غير مفعّل بعد، السلسلة محفوظة ليومين من الغياب ثم تُصفَّر في الثالث
+    let effectiveStreak = streak;
+    if (!todayActive && missedDays >= 3) {
+      effectiveStreak = 0;
+    }
+
+    // لا نظهر التجميد إلا بعد غياب يوم كامل (اليوم الموالي) — أي missedDays >= 1
+    const frozen = effectiveStreak > 0 && missedDays >= 1 && !todayActive;
+    return { streak: effectiveStreak, missedDays, frozen };
+  }, [dailyLog]);
 
   const computeAllTimePeak = useCallback(() => {
     let peak = 0;
@@ -1132,7 +1186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getTotalGlobalDhikr, isDevUnlocked, toggleDevUnlock,
         reviewState, shouldShowReview, markReviewAsRated, deferReview,
         gender, setGender, country, setCountry, epithet, setEpithet, badges, loaded,
-        dailyGoal, setDailyGoal, getTodayCount, computeStreak, computeAllTimePeak,
+        dailyGoal, setDailyGoal, getTodayCount, computeStreak, getStreakInfo, computeAllTimePeak,
         onboardingDone, setOnboardingDone,
         tourRects, setTourRects, tourTarget, tourTick, requestTourMeasure,
         tourRoot, setTourRoot,

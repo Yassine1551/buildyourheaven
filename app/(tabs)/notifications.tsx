@@ -17,7 +17,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAlert } from '@/template';
 import { theme } from '../../constants/theme';
 import { useTourMeasure } from '../../hooks/useTourMeasure';
@@ -169,6 +169,24 @@ export default function NotificationsScreen() {
       active = false;
     };
   }, []);
+
+  // عند فتح الشاشة (الضغط على أيقونة التنبيهات): إذا لم تكن التفعيلات مفعّلة نعرض رسالة التفعيل
+  useFocusEffect(
+    useCallback(() => {
+      if (!settingsLoaded) return;
+      const anyEnabled = Object.values(settings.enabled).some(Boolean);
+      if (!anyEnabled) {
+        const timer = setTimeout(() => {
+          showAlert(
+            'تفعيل التذكيرات 📿',
+            'التنبيهات غير مفعّلة حالياً. فعِّل تذكيرات الأذكار لتصل إليك في أوقاتها 🌅🌙',
+            [{ text: 'حسناً', style: 'cancel' as const }]
+          );
+        }, 400);
+        return () => clearTimeout(timer);
+      }
+    }, [settingsLoaded, settings, showAlert])
+  );
 
   useEffect(() => {
     if (!settingsLoaded) return;
