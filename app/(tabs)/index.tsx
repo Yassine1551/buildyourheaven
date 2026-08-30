@@ -2015,6 +2015,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#333',
     textAlign: 'center',
+    writingDirection: 'rtl',
   },
   statLabel: {
     fontSize: 9,

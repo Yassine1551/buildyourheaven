@@ -16,8 +16,8 @@ export const REDIRECT_URI = AuthSession.makeRedirectUri({
   path: 'auth/callback',
 });
 
-console.log('[supabase] REDIRECT_URI =', REDIRECT_URI);
-console.log('[supabase] أضف هذا الرابط إلى Supabase ← Authentication ← URL Configuration ← Redirect URLs');
+// يُرجى إضافة REDIRECT_URI في لوحة Supabase ← Authentication ← URL Configuration ← Redirect URLs
+// (لا نطبع بيانات الجلسة أو الروابط في السجلات)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -53,8 +53,7 @@ export async function signInWithGoogle(): Promise<{ user: GoogleUser | null; err
     }
 
     const res = await WebBrowser.openAuthSessionAsync(data.url, REDIRECT_URI);
-    console.log('[supabase] authorize URL (بداية):', data.url);
-    console.log('[supabase] عودة المتصفح res.type =', res.type, '| res.url =', res.type === 'success' ? res.url : '(لا يوجد)');
+    // لا نطبع res.url: قد يحتوي رموز جلسة/دخول حساسة
     if (res.type !== 'success') {
       return {
         user: null,

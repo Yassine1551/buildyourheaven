@@ -9,12 +9,14 @@ import {
   Switch,
   Modal,
   TextInput,
+  Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/template';
 import { theme } from '../../constants/theme';
@@ -117,6 +119,13 @@ export default function NotificationsScreen() {
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
+  // System notification permission status (server-side/OS-level)
+  const [sysNotifGranted, setSysNotifGranted] = useState<boolean | null>(null);
+  const [canAskAgain, setCanAskAgain] = useState(true);
+  // Motivational banner: shown only when system notifications are disabled,
+  // and at most once every 3 days (respecting the user's comfort).
+  const [showMotivBanner, setShowMotivBanner] = useState(false);
+
   // Time picker modal
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pickerType, setPickerType] = useState<AlertType>('morning');
@@ -138,6 +147,30 @@ export default function NotificationsScreen() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const perm = await Notifications.getPermissionsAsync();
+        if (!active) return;
+        setSysNotifGranted(perm.granted);
+        setCanAskAgain(perm.canAskAgain ?? true);
+        if (perm.granted) {
+          setShowMotivBanner(false);
+          return;
+        }
+        const last = await AsyncStorage.getItem('notifMotivDismissedAt');
+        const lastTs = last ? parseInt(last, 10) : 0;
+        if (Date.now() - lastTs > 3 * 24 * 60 * 60 * 1000) {
+          setShowMotivBanner(true);
+        }
+      } catch {}
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!settingsLoaded) return;
     scheduleAllAdhkar(settings).catch(() => {});
     saveNotificationSettings(settings);
@@ -152,6 +185,36 @@ export default function NotificationsScreen() {
     } catch (e) {
       // Silent fail
     }
+  };
+
+  const handleEnableSystemNotifs = async () => {
+    try {
+      const cur = await Notifications.getPermissionsAsync();
+      if (cur.granted) {
+        setSysNotifGranted(true);
+        setShowMotivBanner(false);
+        return;
+      }
+      if (cur.canAskAgain) {
+        const res = await Notifications.requestPermissionsAsync();
+        setSysNotifGranted(res.granted);
+        setCanAskAgain(res.canAskAgain ?? true);
+        if (res.granted) {
+          setShowMotivBanner(false);
+          return;
+        }
+      }
+      // Either permanently denied or the OS won't show a prompt again:
+      // guide the user to system settings.
+      Linking.openSettings();
+    } catch {}
+  };
+
+  const dismissMotivBanner = async () => {
+    setShowMotivBanner(false);
+    try {
+      await AsyncStorage.setItem('notifMotivDismissedAt', String(Date.now()));
+    } catch {}
   };
 
   const showToast = useCallback((msg: string) => {
@@ -272,6 +335,34 @@ export default function NotificationsScreen() {
               ) : null}
             </View>
           </View>
+
+          {/* Motivational banner when system notifications are disabled (max once/3 days) */}
+          {showMotivBanner ? (
+            <View style={styles.motivCard}>
+              <View style={styles.motivHeader}>
+                <MaterialIcons name="notifications-active" size={22} color={theme.gold} />
+                <Text style={styles.motivTitle}>تفعيل التنبيهات الروحية</Text>
+              </View>
+              <Text style={styles.motivText}>
+                «اذكروني أذكركم» — التذكيرات رفيقٌ صامت يبقيك على ذكر الله في أذكار اليوم والليلة.
+                فعّل إشعارات النظام لتصل إليك في أوقاتها 🌅🌙
+              </Text>
+              <View style={styles.motivActions}>
+                <Pressable
+                  onPress={handleEnableSystemNotifs}
+                  style={({ pressed }) => [styles.motivPrimaryBtn, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.motivPrimaryText}>تفعيل التنبيهات</Text>
+                </Pressable>
+                <Pressable
+                  onPress={dismissMotivBanner}
+                  style={({ pressed }) => [styles.motivLaterBtn, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.motivLaterText}>لاحقاً</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
 
           {/* Schedule Settings */}
           <View style={styles.scheduleCard} ref={(el) => { highlightRef.current = el; }}>
@@ -949,5 +1040,66 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
     writingDirection: 'rtl',
+  },
+  // Motivational banner (system notifications disabled)
+  motivCard: {
+    marginTop: 14,
+    marginBottom: 2,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: 'rgba(6,78,59,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.35)',
+  },
+  motivHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  motivTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.gold,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  motivText: {
+    fontSize: 13,
+    lineHeight: 21,
+    color: 'rgba(245,231,200,0.92)',
+    writingDirection: 'rtl',
+    textAlign: 'right',
+    marginBottom: 12,
+  },
+  motivActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  motivPrimaryBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#D4AF37',
+  },
+  motivPrimaryText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0B1E16',
+  },
+  motivLaterBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  motivLaterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(245,231,200,0.85)',
   },
 });
