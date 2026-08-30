@@ -699,6 +699,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'rgba(255,255,255,0.5)',
     writingDirection: 'rtl',
+    textAlign: 'right',
   },
   currentRankBadge: {
     paddingHorizontal: 10,
@@ -730,12 +731,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
     writingDirection: 'rtl',
+    textAlign: 'right',
   },
   nextRankHint: {
     fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.4)',
     writingDirection: 'rtl',
+    textAlign: 'right',
     marginTop: 2,
   },
   progressContainer: {
