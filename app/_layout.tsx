@@ -3,7 +3,7 @@ import { AppState, AppStateStatus, View, StyleSheet, Alert, Linking, Platform } 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Font from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useRootNavigationState } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AlertProvider } from '@/template';
@@ -126,15 +126,16 @@ export default function RootLayout() {
 function AppShell({ showLogo, pendingRoute, setPendingRoute }: { showLogo: boolean; pendingRoute: string | null; setPendingRoute: (r: string | null) => void }) {
   const { loaded, onboardingDone, setOnboardingDone, welcomeIntroDone } = useApp();
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   // Navigate to a deep-linked adhkar page only once the app (and its navigation
   // container) is fully ready. This fixes cold-start taps that opened the wrong page.
   useEffect(() => {
-    if (pendingRoute && loaded) {
+    if (pendingRoute && loaded && rootNavigationState?.key) {
       router.push(pendingRoute as never);
       setPendingRoute(null);
     }
-  }, [pendingRoute, loaded, router, setPendingRoute]);
+  }, [pendingRoute, loaded, rootNavigationState?.key, router, setPendingRoute]);
 
   return (
     <>

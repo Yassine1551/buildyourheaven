@@ -96,8 +96,8 @@ export default function MorningAdhkarScreen() {
   // Horizontal strip PanResponder: drag reveals adjacent cards
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy),
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderGrant: () => {
         startX.value = slideX.value;
       },
@@ -541,6 +541,7 @@ const styles = StyleSheet.create({
   counterViewport: {
     flex: 1,
     overflow: 'hidden',
+    writingDirection: 'ltr',
   },
   topSection: {
     flex: 1,
