@@ -554,8 +554,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return { ok: true };
     } catch (e: any) {
-      setCloudError(e?.message || 'تعذر الاتصال بالحساب');
-      return { ok: false, error: e?.message };
+      setCloudError('تعذر الاتصال، يرجى المحاولة لاحقاً');
+      return { ok: false, error: 'تعذر الاتصال، يرجى المحاولة لاحقاً' };
     } finally {
       setCloudLoading(false);
     }

@@ -49,7 +49,7 @@ export async function signInWithGoogle(): Promise<{ user: GoogleUser | null; err
       options: { skipBrowserRedirect: true, redirectTo: REDIRECT_URI },
     });
     if (error || !data?.url) {
-      return { user: null, error: error?.message || 'تعذر بدء تسجيل الدخول' };
+      return { user: null, error: 'تعذر بدء تسجيل الدخول' };
     }
 
     const res = await WebBrowser.openAuthSessionAsync(data.url, REDIRECT_URI);
@@ -68,7 +68,7 @@ export async function signInWithGoogle(): Promise<{ user: GoogleUser | null; err
 
     const { data: sessionData, error: exError } = await supabase.auth.exchangeCodeForSession(code);
     if (exError || !sessionData.user) {
-      return { user: null, error: exError?.message || 'تعذر تبادل رمز الجلسة' };
+      return { user: null, error: 'تعذر تبادل رمز الجلسة' };
     }
 
     const meta = sessionData.user.user_metadata as Record<string, any> | undefined;
@@ -80,7 +80,7 @@ export async function signInWithGoogle(): Promise<{ user: GoogleUser | null; err
       },
     };
   } catch (e: any) {
-    return { user: null, error: e?.message || 'خطأ غير متوقع أثناء تسجيل الدخول' };
+    return { user: null, error: 'خطأ غير متوقع أثناء تسجيل الدخول' };
   }
 }
 
