@@ -136,12 +136,17 @@ function AppShell({ showLogo, pendingRoute, setPendingRoute }: { showLogo: boole
 
   // Navigate to a deep-linked adhkar page only once the app (and its navigation
   // container) is fully ready. This fixes cold-start taps that opened the wrong page.
+  const navigationReady = rootNavigationState?.key != null;
   useEffect(() => {
-    if (pendingRoute && loaded && rootNavigationState?.key) {
+    if (!pendingRoute || !loaded || !navigationReady) return;
+    // Give the initial tab screen a moment to finish mounting, then push.
+    const t = setTimeout(() => {
       router.push(pendingRoute as never);
-      setPendingRoute(null);
-    }
-  }, [pendingRoute, loaded, rootNavigationState?.key, router, setPendingRoute]);
+      // Clear only after the push had a chance to register.
+      setTimeout(() => setPendingRoute(null), 400);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [pendingRoute, loaded, navigationReady, router, setPendingRoute]);
 
   return (
     <>
