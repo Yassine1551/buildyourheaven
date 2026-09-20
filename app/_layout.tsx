@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, View, StyleSheet, Alert, Linking, Platform } from 'react-native';
+import { AppState, AppStateStatus, View, StyleSheet, Alert, Linking, Platform, I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Font from 'expo-font';
@@ -12,6 +12,12 @@ import { AppProvider, useApp } from '../contexts/AppContext';
 import { scheduleAllAdhkar, clearExpiredNotifications, loadNotificationSettings } from '../services/adhkarNotifications';
 import OnboardingTour from '../components/OnboardingTour';
 import OnboardingModal from '../components/OnboardingModal';
+
+// إجبار اتجاه الواجهة على LTR بغض النظر عن لغة النظام لتجنّب قلب التصميم بالكامل.
+// النصوص العربية مُعطلة يدوياً عبر writingDirection/textAlign في كل مكوّن.
+I18nManager.allowRTL(false);
+I18nManager.forceRTL(false);
+I18nManager.swapLeftAndRightInRTL(false);
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
