@@ -48,6 +48,8 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "yassine1551"
+    "owner": "yassine1551",
+    "privacyPolicy": "https://yassine1551.github.io/buildyourheaven/privacy-policy.html",
+    "termsOfService": "https://yassine1551.github.io/buildyourheaven/terms-of-service.html"
   }
 }
