@@ -2,7 +2,7 @@
  * Helper to build share messages for the daily adhkar screens.
  */
 
-const APP_LINK = 'https://play.google.com/apps/testing/build.your.heaven.app';
+const APP_LINK = 'https://play.google.com/store/apps/details?id=build.your.heaven.app';
 
 export interface ShareAdhkarItem {
   title: string;

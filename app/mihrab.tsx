@@ -63,7 +63,7 @@ export default function MihrabScreen() {
   };
 
   const handleShare = useCallback(() => {
-    const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
+    const appLink = 'https://play.google.com/store/apps/details?id=build.your.heaven.app';
     const isQuran = item.id === 'thuluth-quran' || item.id === 'dhikr_qasr';
     if (isQuran) {
       // Special case: publish the surah only, fadl below it, then the link

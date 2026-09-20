@@ -300,7 +300,7 @@ export default function DashboardScreen() {
   }, [isCardUnlocked, getUnlockRequirement, router, showAlert]);
 
   const handleShareBenefit = useCallback(async () => {
-    const appLink = 'https://play.google.com/store/apps/details?id=YOUR_APP_ID';
+    const appLink = 'https://play.google.com/store/apps/details?id=build.your.heaven.app';
     setSharingBenefit(true);
     await new Promise(resolve => setTimeout(resolve, 300));
     try {
@@ -369,7 +369,7 @@ export default function DashboardScreen() {
         setShowAboutModal(true);
       } else if (route === 'our-apps') {
         try {
-          const url = 'https://play.google.com/store/apps/developer?id=Bani+Jannatak';
+          const url = 'https://play.google.com/store/apps/details?id=build.your.heaven.app';
           const supported = await Linking.canOpenURL(url);
           if (supported) await Linking.openURL(url);
           else showAlert('تطبيقاتنا', 'سيتم نشر صفحة التطبيقات قريباً.');
@@ -379,7 +379,7 @@ export default function DashboardScreen() {
       } else if (route === 'share') {
         try {
           await Share.share({
-            message: 'حمل تطبيق ابنِ جنتك - صدقة جارية لك.',
+            message: 'حمل تطبيق ابنِ جنتك - صدقة جارية لك.\nhttps://play.google.com/store/apps/details?id=build.your.heaven.app',
           });
         } catch (e) {}
       } else if (route === 'privacy') {
@@ -1627,7 +1627,7 @@ export default function DashboardScreen() {
               onPress={() => {
                 markReviewAsRated();
                 setShowRatingModal(false);
-                Linking.openURL('https://play.google.com/store/apps/details?id=ai.onspace.banijannatak').catch(() => {});
+                Linking.openURL('https://play.google.com/store/apps/details?id=build.your.heaven.app').catch(() => {});
               }}
               style={({ pressed }) => [styles.ratingPrimaryBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
