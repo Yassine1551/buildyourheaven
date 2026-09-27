@@ -5,14 +5,13 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CURRENT_VERSION = '1.0.4';
+const CURRENT_VERSION = '1.0.5';
 const LAST_SEEN_KEY = 'last_seen_update_version';
 
 export const UPDATE_FEATURES: string[] = [
-  'استفد من زر كتم الصوت والهزاز داخل شاشات الأذكار',
-  'شمّر بين بطاقات الأذكار بالسحب بسلاسة',
-  'عند فتح إشعار أذكار معيّن ينتقل بك مباشرة إلى الذكر الصحيح',
-  'روابط المشاركة محدّثة إلى متجر Google Play الحقيقي',
+  'رأس شاشات الأذكار: أزرار الصوت والهزاز يساراً، والعنوان والتقدم في المنتصف',
+  'إصلاح نهائي للسحب بين بطاقات الأذكار (أذكار النوم وغيرها)',
+  'دمج التسبيحات الأربع في بطاقة واحدة: كل نقرة 40 حسنة و4 صدقات',
 ];
 
 export async function shouldShowUpdateNotice(): Promise<boolean> {

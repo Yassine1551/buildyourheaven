@@ -10,9 +10,13 @@ export interface WirdDhikrItem {
   smallText?: boolean;
   keyword?: string;
   syncTarget?: string;
+  hasanatPerTap?: number;
+  sadaqatPerTap?: number;
 }
 
-export const WIRD_CONFIG_VERSION = 1;
+export const WIRD_CONFIG_VERSION = 2;
+
+export const OLD_TASBIH_IDS = ['wird_subhan', 'wird_hamd', 'wird_tahlil', 'wird_takbir'];
 
 export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
   {
@@ -24,10 +28,17 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     syncTarget: 'multi_qasr_khatma',
     hideFadl: true,
   },
-  { id: 'wird_subhan', title: 'سُبْحَانَ اللهِ', text: 'سُبْحَانَ اللهِ', target: 100, enabled: true },
-  { id: 'wird_hamd', title: 'الْحَمْدُ لِلَّهِ', text: 'الْحَمْدُ لِلَّهِ', target: 100, enabled: true },
-  { id: 'wird_tahlil', title: 'لَا إِلَهَ إِلَّا اللهُ', text: 'لَا إِلَهَ إِلَّا اللهُ', target: 100, enabled: true },
-  { id: 'wird_takbir', title: 'اللهُ أَكْبَرُ', text: 'اللهُ أَكْبَرُ', target: 100, enabled: true },
+  {
+    id: 'wird_sadaqat',
+    title: 'سُبْحَانَ اللهِ، الْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللهُ، اللهُ أَكْبَرُ',
+    text: 'سُبْحَانَ اللهِ، الْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللهُ، اللهُ أَكْبَرُ',
+    target: 100,
+    enabled: true,
+    fadl: 'التسبيحةُ صدقةٌ، والتحميدةُ صدقةٌ، والتهليلةُ صدقةٌ، والتكبيرةُ صدقةٌ',
+    hasanatPerTap: 40,
+    sadaqatPerTap: 4,
+    smallText: true,
+  },
   { id: 'wird_hawqala', title: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', text: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', target: 100, enabled: true },
   { id: 'wird_hasbi', title: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', text: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', target: 100, enabled: true },
   { id: 'wird_salawat', title: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', target: 100, enabled: true },

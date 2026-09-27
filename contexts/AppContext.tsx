@@ -9,7 +9,7 @@ import { morningAdhkarItems } from '../services/morningAdhkar';
 import { sleepAdhkarItems } from '../services/sleepAdhkar';
 import { eveningAdhkarItems } from '../services/eveningAdhkar';
 import { wakeupAdhkarItems } from '../services/wakeupAdhkar';
-import { WirdDhikrItem, DEFAULT_WIRD_ITEMS, WIRD_CONFIG_VERSION } from '../services/personalWird';
+import { WirdDhikrItem, DEFAULT_WIRD_ITEMS, WIRD_CONFIG_VERSION, OLD_TASBIH_IDS } from '../services/personalWird';
 import { TourRect } from '../constants/tour';
 import { GameSnapshot, getServerSnapshot, pushServerSnapshot, upsertProfile } from '../services/cloudSync';
 import { GoogleUser, signInWithGoogle, signOutGoogle } from '../services/supabaseClient';
@@ -346,7 +346,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   }
                 : { ...def };
             });
-            parsed.filter(s => !defById.has(s.id)).forEach(s => merged.push(s));
+            parsed.filter(s => !defById.has(s.id) && !OLD_TASBIH_IDS.includes(s.id)).forEach(s => merged.push(s));
             setWirdConfig(merged);
           }
         } catch (e) {}
@@ -978,7 +978,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const oldGlobalTotal = getTotalGlobalDhikr();
     const current = (wirdCounts[dhikrId] || 0) + 1;
     setWirdCounts(prev => ({ ...prev, [dhikrId]: current }));
-    setHasanat(prev => prev + 10);
+    setHasanat(prev => prev + (item.hasanatPerTap ?? 10));
+    if (item.sadaqatPerTap) {
+      setStats(prev => ({ ...prev, sadaqat: (prev.sadaqat || 0) + (item.sadaqatPerTap || 0) }));
+    }
     setIstiqama(prev => prev + 1);
     incrementTodayCount();
     const newLevel = Math.floor((istiqama + 1) / 50) + 1;

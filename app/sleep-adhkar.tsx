@@ -8,7 +8,6 @@ import {
   Dimensions,
   Modal,
   Platform,
-  PanResponder,
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,7 +36,6 @@ import { theme } from '../constants/theme';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RING_SIZE = 110;
 const STROKE_WIDTH = 5;
-const SWIPE_THRESHOLD = 50;
 
 export default function SleepAdhkarScreen() {
   const router = useRouter();
@@ -62,8 +60,6 @@ export default function SleepAdhkarScreen() {
   const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
 
   const buttonScale = useSharedValue(1);
-  const slideX = useSharedValue(-(reversedItems.length - 1) * SCREEN_WIDTH);
-  const startX = useSharedValue(0);
   const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeIndexRef = useRef<number | null>(reversedItems.length - 1);
   const isAutoAdvancingRef = useRef(false);
@@ -81,10 +77,6 @@ export default function SleepAdhkarScreen() {
     transform: [{ scale: buttonScale.value }],
   }));
 
-  const stripAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideX.value }],
-  }));
-
   // Keep refs in sync with state
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -94,65 +86,38 @@ export default function SleepAdhkarScreen() {
     isAutoAdvancingRef.current = isAutoAdvancing;
   }, [isAutoAdvancing]);
 
-  // Horizontal strip PanResponder: drag reveals adjacent cards
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderGrant: () => {
-        startX.value = slideX.value;
-      },
-      onPanResponderMove: (_, g) => {
-        slideX.value = startX.value + g.dx * 0.6;
-      },
-      onPanResponderRelease: (_, g) => {
-        const currentIndex = activeIndexRef.current;
-        if (currentIndex === null || isAutoAdvancingRef.current) return;
+  // Horizontal strip: native paging ScrollView handles swipes robustly on
+  // Android while the vertical text ScrollView inside each card still scrolls.
+  const stripScrollRef = useRef<ScrollView | null>(null);
+  const pendingScrollRef = useRef<number | null>(null);
+  const initializedStripRef = useRef(false);
 
-        let newIndex = currentIndex;
-        if (g.dx > SWIPE_THRESHOLD && currentIndex > 0) {
-          newIndex = currentIndex - 1;
-        } else if (g.dx < -SWIPE_THRESHOLD && currentIndex < reversedItems.length - 1) {
-          newIndex = currentIndex + 1;
-        }
-
-        if (newIndex !== currentIndex) {
-          slideX.value = withTiming(-newIndex * SCREEN_WIDTH, { duration: 180 });
-          setTimeout(() => {
-            activeIndexRef.current = newIndex;
-            setActiveIndex(newIndex);
-            setSessionCount(0);
-            setIsAutoAdvancing(false);
-          }, 180);
-        } else {
-          slideX.value = withSpring(-currentIndex * SCREEN_WIDTH, { damping: 18, stiffness: 220 });
-        }
-      },
-      onPanResponderTerminate: () => {
-        const idx = activeIndexRef.current;
-        if (idx !== null) {
-          slideX.value = withSpring(-idx * SCREEN_WIDTH, { damping: 18, stiffness: 220 });
-        }
-      },
-    })
-  ).current;
+  const scrollToIndex = (idx: number, animated = true) => {
+    if (idx < 0 || idx >= reversedItems.length) return;
+    if (stripScrollRef.current) {
+      stripScrollRef.current.scrollTo({ x: idx * SCREEN_WIDTH, animated });
+    } else {
+      pendingScrollRef.current = idx;
+    }
+  };
 
   const navigateToItem = (newIndex: number) => {
     if (newIndex < 0 || newIndex >= reversedItems.length) return;
-    slideX.value = withTiming(-newIndex * SCREEN_WIDTH, { duration: 180 });
-    setTimeout(() => {
-      setActiveIndex(newIndex);
-      setSessionCount(0);
-      setIsAutoAdvancing(false);
-    }, 180);
+    scrollToIndex(newIndex);
+    activeIndexRef.current = newIndex;
+    setActiveIndex(newIndex);
+    setSessionCount(0);
+    setIsAutoAdvancing(false);
   };
 
   const handleOpenItem = (item: SleepDhikrItem) => {
     const idx = reversedItems.findIndex(d => d.id === item.id);
+    if (idx < 0) return;
+    scrollToIndex(idx, false);
+    activeIndexRef.current = idx;
     setActiveIndex(idx);
     setSessionCount(0);
     setIsAutoAdvancing(false);
-    slideX.value = -idx * SCREEN_WIDTH;
   };
 
   // Auto-advance logic
@@ -162,12 +127,11 @@ export default function SleepAdhkarScreen() {
     if (nextIndex < 0) {
       router.back();
     } else {
-      slideX.value = withTiming(-nextIndex * SCREEN_WIDTH, { duration: 180 });
-      setTimeout(() => {
-        setActiveIndex(nextIndex);
-        setSessionCount(0);
-        setIsAutoAdvancing(false);
-      }, 180);
+      scrollToIndex(nextIndex);
+      activeIndexRef.current = nextIndex;
+      setActiveIndex(nextIndex);
+      setSessionCount(0);
+      setIsAutoAdvancing(false);
     }
   }, [activeIndex, router]);
 
@@ -235,12 +199,6 @@ export default function SleepAdhkarScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerProgress}>
-              {formatArabicNumber(totalCompleted, useWesternNumerals)}/{formatArabicNumber(totalItems, useWesternNumerals)}
-            </Text>
-          </View>
-          <Text style={styles.headerTitle}>أذكار النوم</Text>
-          <View style={styles.headerActions}>
             <Pressable
               onPress={toggleSound}
               style={({ pressed }) => [styles.soundToggleBtn, pressed && { opacity: 0.5 }, !soundEnabled && styles.soundToggleBtnOff]}
@@ -253,6 +211,14 @@ export default function SleepAdhkarScreen() {
             >
               <MaterialIcons name={vibrationEnabled ? 'vibration' : 'smartphone'} size={16} color={vibrationEnabled ? '#FFF' : '#EF4444'} />
             </Pressable>
+          </View>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>أذكار النوم</Text>
+            <Text style={styles.headerProgress}>
+              {formatArabicNumber(totalCompleted, useWesternNumerals)}/{formatArabicNumber(totalItems, useWesternNumerals)}
+            </Text>
+          </View>
+          <View style={styles.headerActions}>
             <Pressable onPress={handleShare} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
               <MaterialIcons name="share" size={20} color="#FFF" />
             </Pressable>
@@ -268,9 +234,42 @@ export default function SleepAdhkarScreen() {
         </View>
 
         {activeItem ? (
-          /* Counter View - Horizontal strip for smooth wheel-like swipe */
-          <View style={[styles.counterViewport, { overflow: 'hidden' }]} {...panResponder.panHandlers}>
-            <Animated.View style={[styles.stripContainer, stripAnimStyle]}>
+          /* Counter View - native horizontal pager so swipes always work on
+             Android while the vertical text ScrollView inside each card still scrolls */
+          <ScrollView
+            ref={stripScrollRef}
+            style={styles.counterViewport}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onLayout={() => {
+              if (!initializedStripRef.current) {
+                initializedStripRef.current = true;
+                const target = pendingScrollRef.current ?? activeIndexRef.current;
+                pendingScrollRef.current = null;
+                if (target != null && target > 0) {
+                  stripScrollRef.current?.scrollTo({ x: target * SCREEN_WIDTH, animated: false });
+                }
+              }
+            }}
+            onScrollBeginDrag={() => {
+              if (autoAdvanceTimerRef.current) {
+                clearTimeout(autoAdvanceTimerRef.current);
+                autoAdvanceTimerRef.current = null;
+              }
+              setIsAutoAdvancing(false);
+            }}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              if (idx >= 0 && idx < reversedItems.length && idx !== activeIndexRef.current) {
+                activeIndexRef.current = idx;
+                setActiveIndex(idx);
+                setSessionCount(0);
+                setIsAutoAdvancing(false);
+              }
+            }}
+          >
+            <View style={styles.stripContainer}>
               {reversedItems.map((item, idx) => {
                 const isCenter = idx === activeIndex;
                 return (
@@ -397,8 +396,8 @@ export default function SleepAdhkarScreen() {
                   </View>
                 );
               })}
-            </Animated.View>
-          </View>
+            </View>
+          </ScrollView>
         ) : (
           /* List View */
           <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
@@ -506,6 +505,15 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    zIndex: 1,
+  },
+  headerCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerProgress: {
     fontSize: 13,
@@ -561,10 +569,9 @@ const styles = StyleSheet.create({
   stripContainer: {
     flexDirection: 'row',
     height: '100%',
-    gap: 10,
   },
   stripCard: {
-    width: SCREEN_WIDTH - 10,
+    width: SCREEN_WIDTH,
     flexShrink: 0,
     paddingHorizontal: 16,
   },
