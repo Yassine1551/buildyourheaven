@@ -12,6 +12,8 @@ import { AppProvider, useApp } from '../contexts/AppContext';
 import { scheduleAllAdhkar, clearExpiredNotifications, loadNotificationSettings } from '../services/adhkarNotifications';
 import OnboardingTour from '../components/OnboardingTour';
 import OnboardingModal from '../components/OnboardingModal';
+import UpdateNoticeModal from '../components/UpdateNoticeModal';
+import { shouldShowUpdateNotice } from '../services/appUpdate';
 
 // إجبار اتجاه الواجهة على LTR بغض النظر عن لغة النظام لتجنّب قلب التصميم بالكامل.
 // النصوص العربية مُعطلة يدوياً عبر writingDirection/textAlign في كل مكوّن.
@@ -133,6 +135,17 @@ function AppShell({ showLogo, pendingRoute, setPendingRoute }: { showLogo: boole
   const { loaded, onboardingDone, setOnboardingDone, welcomeIntroDone } = useApp();
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  // Show the "what's new" notice once after the app is updated to a newer
+  // version. The user may accept (dismissed until the next update) or say
+  // "later" (the notice reappears on a future launch).
+  useEffect(() => {
+    if (!loaded) return;
+    shouldShowUpdateNotice().then((show) => {
+      if (show) setShowUpdateModal(true);
+    });
+  }, [loaded]);
 
   // Navigate to a deep-linked adhkar page only once the app (and its navigation
   // container) is fully ready. This fixes cold-start taps that opened the wrong page.
@@ -167,6 +180,11 @@ function AppShell({ showLogo, pendingRoute, setPendingRoute }: { showLogo: boole
         <OnboardingTour onClose={() => setOnboardingDone(true)} />
       )}
       <OnboardingModal />
+      <UpdateNoticeModal
+        visible={showUpdateModal}
+        onAccept={() => setShowUpdateModal(false)}
+        onLater={() => setShowUpdateModal(false)}
+      />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen

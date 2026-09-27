@@ -47,6 +47,8 @@ export default function MorningAdhkarScreen() {
     completeMorningDhikr,
     soundEnabled,
     vibrationEnabled,
+    toggleSound,
+    toggleVibration,
     useWesternNumerals,
   } = useApp();
 
@@ -234,6 +236,18 @@ export default function MorningAdhkarScreen() {
           </View>
           <Text style={styles.headerTitle}>أذكار الصباح</Text>
           <View style={styles.headerActions}>
+            <Pressable
+              onPress={toggleSound}
+              style={({ pressed }) => [styles.soundToggleBtn, pressed && { opacity: 0.5 }, !soundEnabled && styles.soundToggleBtnOff]}
+            >
+              <MaterialIcons name={soundEnabled ? 'volume-up' : 'volume-off'} size={16} color={soundEnabled ? '#FFF' : '#EF4444'} />
+            </Pressable>
+            <Pressable
+              onPress={toggleVibration}
+              style={({ pressed }) => [styles.soundToggleBtn, pressed && { opacity: 0.5 }, !vibrationEnabled && styles.soundToggleBtnOff]}
+            >
+              <MaterialIcons name={vibrationEnabled ? 'vibration' : 'smartphone'} size={16} color={vibrationEnabled ? '#FFF' : '#EF4444'} />
+            </Pressable>
             <Pressable onPress={handleShare} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}>
               <MaterialIcons name="share" size={20} color="#FFF" />
             </Pressable>
@@ -506,6 +520,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  soundToggleBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soundToggleBtnOff: {
+    backgroundColor: 'rgba(239,68,68,0.25)',
   },
   headerActions: {
     flexDirection: 'row',
