@@ -58,6 +58,8 @@ interface AppContextType extends AppState {
   toggleSound: () => void;
   toggleVibration: () => void;
   useWesternNumerals: boolean;
+  fontSizeMap: Record<string, number>;
+  setCardFontSize: (key: string, size: number) => void;
   toggleNumeralSystem: () => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -178,6 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [wirdConfig, setWirdConfig] = useState<WirdDhikrItem[]>(DEFAULT_WIRD_ITEMS);
   const [wirdCounts, setWirdCounts] = useState<Record<string, number>>({});
   const [wirdDate, setWirdDate] = useState<string>('');
+  const [fontSizeMap, setFontSizeMap] = useState<Record<string, number>>({});
   const [morningCountsDate, setMorningCountsDate] = useState<string>('');
   const [eveningCountsDate, setEveningCountsDate] = useState<string>('');
   const [gender, setGenderState] = useState<'male' | 'female' | ''>('');
@@ -246,7 +249,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) saveData();
-  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, welcomeIntroDone, level, istiqama, country, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, reviewState, gender, epithet, badges, recitation, onboardingDone]);
+  }, [hasanat, dhikrCounts, internalDhikrCounts, alfHasanaDate, hattKhatayaDate, stats, userName, showWelcome, welcomeIntroDone, level, istiqama, country, unlockedCards, dailyLog, dailyGoal, soundEnabled, vibrationEnabled, useWesternNumerals, isDarkMode, darkAuto, targetYears, morningCounts, sleepCounts, eveningCounts, wakeupCounts, wirdConfig, wirdCounts, wirdDate, fontSizeMap, reviewState, gender, epithet, badges, recitation, onboardingDone]);
 
   // Smart Rating Trigger 1: hasanat reaches 1000 (only fires once - state stays pristine until user acts)
   useEffect(() => {
@@ -376,6 +379,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedWakeupCounts) setWakeupCounts(JSON.parse(savedWakeupCounts));
       const savedReviewState = await AsyncStorage.getItem('review_state');
       if (savedReviewState) setReviewState(JSON.parse(savedReviewState));
+      const savedFontSizes = await AsyncStorage.getItem('font_size_map');
+      if (savedFontSizes) {
+        try {
+          setFontSizeMap(JSON.parse(savedFontSizes));
+        } catch (e) {}
+      }
       const savedRecitation = await AsyncStorage.getItem('recitation');
       if (savedRecitation === 'warsh' || savedRecitation === 'hafs') setRecitationState(savedRecitation);
       const savedOnboarding = await AsyncStorage.getItem('onboarding_seen');
@@ -429,6 +438,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem('wird_config', JSON.stringify(wirdConfig)),
         AsyncStorage.setItem('wird_config_version', String(WIRD_CONFIG_VERSION)),
         AsyncStorage.setItem('wird_counts', JSON.stringify(wirdCounts)),
+        AsyncStorage.setItem('font_size_map', JSON.stringify(fontSizeMap)),
         AsyncStorage.setItem('wird_date', wirdDate),
         AsyncStorage.setItem('morning_counts_date', morningCountsDate),
         AsyncStorage.setItem('evening_counts_date', eveningCountsDate),
@@ -1171,6 +1181,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (goal > 0) setDailyGoalState(goal);
   }, []);
 
+  const setCardFontSize = useCallback((key: string, size: number) => {
+    setFontSizeMap(prev => ({ ...prev, [key]: size }));
+  }, []);
+
   const rankTitle = getRankTitle(istiqama);
 
   return (
@@ -1178,7 +1192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         hasanat, dhikrCounts, stats, targetStartDate, userName, showWelcome, level, istiqama,
         unlockedCards, celebrationQueue, internalDhikrCounts, morningCounts, sleepCounts, eveningCounts, wakeupCounts,
-        wirdConfig, wirdCounts, wirdDate,
+        wirdConfig, wirdCounts, wirdDate, fontSizeMap, setCardFontSize,
         incrementDhikr, addHasanat, resetDhikr, updateStat, getElapsedTime, getTargetProgress, setUserName,
         dismissWelcome, welcomeIntroDone, setWelcomeIntroDone, isCardUnlocked, getUnlockRequirement, clearFirstCelebration, rankTitle,
         soundEnabled, vibrationEnabled, toggleSound, toggleVibration, useWesternNumerals,

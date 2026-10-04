@@ -40,10 +40,18 @@ export default function WirdScreen() {
     soundEnabled,
     vibrationEnabled,
     useWesternNumerals,
+    fontSizeMap,
+    setCardFontSize,
   } = useApp();
 
   const enabledItems = wirdConfig.filter(i => i.enabled);
   const reversedItems = [...enabledItems].reverse();
+
+  const getWirdFont = (id: string, base: number) => fontSizeMap[`wird:${id}`] ?? base;
+  const changeWirdFont = (id: string, delta: number, base: number) => {
+    const next = Math.min(52, Math.max(16, getWirdFont(id, base) + delta));
+    setCardFontSize(`wird:${id}`, next);
+  };
 
   const [activeIndex, setActiveIndex] = useState<number | null>(reversedItems.length - 1);
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
@@ -315,6 +323,9 @@ export default function WirdScreen() {
                                   ? trimmed.slice(trimmed.indexOf(item.keyword!) + item.keyword!.length)
                                   : '';
                                 const isShort = rest.length > 0 && rest.length <= 16;
+                                const fz = fontSizeMap[`wird:${item.id}`];
+                                const kwBump = fz ? { fontSize: fz, lineHeight: Math.max(20, Math.round(fz * 1.45)) } : undefined;
+                                const restBump = fz ? { fontSize: Math.max(12, Math.round(fz * 0.85)), lineHeight: Math.max(20, Math.round(fz * 1.45)) } : undefined;
                                 const keywordStyle = isSmall
                                   ? isShort
                                     ? styles.countedKeywordXL
@@ -327,20 +338,39 @@ export default function WirdScreen() {
                                   : styles.countedRest;
                                 return (
                                   <Text key={i} style={styles.countedLine}>
-                                    <Text style={keywordStyle}>
+                                    <Text style={[keywordStyle, kwBump]}>
                                       {hasKeyword ? trimmed.slice(0, trimmed.indexOf(item.keyword!) + item.keyword!.length) : trimmed}
                                     </Text>
                                     {hasKeyword && (
-                                      <Text style={restStyle}>{rest}</Text>
+                                      <Text style={[restStyle, restBump]}>{rest}</Text>
                                     )}
                                   </Text>
                                 );
                               })}
                             </View>
                           ) : (
-                            <Text style={item.smallText ? styles.dhikrTextSmall : styles.dhikrText}>{item.text}</Text>
+                            <Text style={[
+                              item.smallText ? styles.dhikrTextSmall : styles.dhikrText,
+                              fontSizeMap[`wird:${item.id}`] ? { fontSize: fontSizeMap[`wird:${item.id}`], lineHeight: Math.max(22, Math.round(fontSizeMap[`wird:${item.id}`] * 1.6)) } : null,
+                            ]}>{item.text}</Text>
                           )}
                         </ScrollView>
+                        <View style={styles.fontControls} pointerEvents="box-none">
+                          <Pressable
+                            onPress={() => changeWirdFont(item.id, -2, item.smallText ? 20 : 26)}
+                            style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]}
+                            hitSlop={6}
+                          >
+                            <Text style={styles.fontBtnText}>A−</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => changeWirdFont(item.id, 2, item.smallText ? 20 : 26)}
+                            style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]}
+                            hitSlop={6}
+                          >
+                            <Text style={styles.fontBtnText}>A+</Text>
+                          </Pressable>
+                        </View>
                       </View>
                     </View>
 
@@ -585,20 +615,44 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   dhikrText: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: '#FFF',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 38,
+    lineHeight: 42,
   },
   dhikrTextSmall: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFF',
     textAlign: 'center',
     writingDirection: 'rtl',
-    lineHeight: 28,
+    lineHeight: 32,
+  },
+  fontControls: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 5,
+  },
+  fontBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#E4E4E7',
+    writingDirection: 'ltr',
   },
   countedWrapper: {
     alignSelf: 'stretch',
@@ -606,56 +660,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   countedLine: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#E4E4E7',
     textAlign: 'right',
     writingDirection: 'rtl',
     width: '100%',
-    lineHeight: 22,
+    lineHeight: 24,
     paddingHorizontal: 0,
   },
   countedKeyword: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
     color: '#4ADE80',
     writingDirection: 'rtl',
-    lineHeight: 26,
+    lineHeight: 28,
   },
   countedRest: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    writingDirection: 'rtl',
+    lineHeight: 28,
+  },
+  countedKeywordSmall: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#4ADE80',
+    writingDirection: 'rtl',
+    lineHeight: 25,
+  },
+  countedRestSmall: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#E4E4E7',
+    writingDirection: 'rtl',
+    lineHeight: 25,
+  },
+  countedKeywordXL: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#4ADE80',
+    writingDirection: 'rtl',
+    lineHeight: 26,
+  },
+  countedRestXL: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#E4E4E7',
     writingDirection: 'rtl',
     lineHeight: 26,
-  },
-  countedKeywordSmall: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#4ADE80',
-    writingDirection: 'rtl',
-    lineHeight: 23,
-  },
-  countedRestSmall: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E4E4E7',
-    writingDirection: 'rtl',
-    lineHeight: 23,
-  },
-  countedKeywordXL: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#4ADE80',
-    writingDirection: 'rtl',
-    lineHeight: 24,
-  },
-  countedRestXL: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E4E4E7',
-    writingDirection: 'rtl',
-    lineHeight: 24,
   },
   bottomSection: {
     alignItems: 'center',

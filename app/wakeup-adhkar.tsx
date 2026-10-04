@@ -45,7 +45,15 @@ export default function WakeupAdhkarScreen() {
     toggleSound,
     toggleVibration,
     useWesternNumerals,
+    fontSizeMap,
+    setCardFontSize,
   } = useApp();
+
+  const changeFont = (id: string, delta: number) => {
+    const key = `wakeup:${id}`;
+    const current = fontSizeMap[key] ?? 20;
+    setCardFontSize(key, Math.min(44, Math.max(14, current + delta)));
+  };
 
   const reversedItems = [...wakeupAdhkarItems].reverse();
 
@@ -311,8 +319,16 @@ export default function WakeupAdhkarScreen() {
                           indicatorStyle="white"
                           nestedScrollEnabled
                         >
-                          <Text style={styles.dhikrText}>{item.text}</Text>
+                          <Text style={[styles.dhikrText, fontSizeMap[`wakeup:${item.id}`] ? { fontSize: fontSizeMap[`wakeup:${item.id}`], lineHeight: Math.max(20, Math.round(fontSizeMap[`wakeup:${item.id}`] * 1.7)) } : null]}>{item.text}</Text>
                         </ScrollView>
+                        <View style={styles.fontControls} pointerEvents="box-none">
+                          <Pressable onPress={() => changeFont(item.id, -2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={6}>
+                            <Text style={styles.fontBtnText}>A−</Text>
+                          </Pressable>
+                          <Pressable onPress={() => changeFont(item.id, 2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={6}>
+                            <Text style={styles.fontBtnText}>A+</Text>
+                          </Pressable>
+                        </View>
                       </View>
                     </View>
 
@@ -604,6 +620,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
     lineHeight: 34,
+  },
+  fontControls: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 5,
+  },
+  fontBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#E4E4E7',
+    writingDirection: 'ltr',
   },
   bottomSection: {
     alignItems: 'center',

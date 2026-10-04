@@ -5,13 +5,13 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CURRENT_VERSION = '1.0.5';
+const CURRENT_VERSION = '1.0.6';
 const LAST_SEEN_KEY = 'last_seen_update_version';
 
 export const UPDATE_FEATURES: string[] = [
-  'رأس شاشات الأذكار: أزرار الصوت والهزاز يساراً، والعنوان والتقدم في المنتصف',
-  'إصلاح نهائي للسحب بين بطاقات الأذكار (أذكار النوم وغيرها)',
-  'دمج التسبيحات الأربع في بطاقة واحدة: كل نقرة 40 حسنة و4 صدقات',
+  'بطاقة التسبيحات المدمجة: نفس حجم خط بقية الأذكار مع ربطها بـ"و"',
+  'تكبير وتصغير حجم الخط في كل بطاقة (الورد وأذكار الصباح والمساء والاستيقاظ والنوم)',
+  'يتذكر التطبيق حجم الخط الذي اخترته لكل بطاقة على حدة',
 ];
 
 export async function shouldShowUpdateNotice(): Promise<boolean> {
