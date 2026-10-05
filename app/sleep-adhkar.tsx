@@ -296,16 +296,18 @@ export default function SleepAdhkarScreen() {
 
                         <View style={styles.titleCenter}>
                           <Text style={styles.activeTitle} numberOfLines={2}>{item.title}</Text>
-                          <View style={styles.targetRow}>
+                          <View style={styles.targetBar}>
                             <Text style={styles.targetIndicator}>
                               العدد المطلوب: {formatArabicNumber(item.target, useWesternNumerals)}
                             </Text>
-                            <Pressable onPress={() => changeFont(item.id, -2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
-                              <Text style={styles.fontBtnText}>A−</Text>
-                            </Pressable>
-                            <Pressable onPress={() => changeFont(item.id, 2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
-                              <Text style={styles.fontBtnText}>A+</Text>
-                            </Pressable>
+                            <View style={styles.fontCol} pointerEvents="box-none">
+                              <Pressable onPress={() => changeFont(item.id, -2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
+                                <Text style={styles.fontBtnText}>A−</Text>
+                              </Pressable>
+                              <Pressable onPress={() => changeFont(item.id, 2)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
+                                <Text style={styles.fontBtnText}>A+</Text>
+                              </Pressable>
+                            </View>
                           </View>
                         </View>
 
@@ -696,13 +698,22 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 34,
   },
-  targetRow: {
+  targetBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
+    width: '100%',
+    marginTop: 6,
+    minHeight: 26,
+    position: 'relative',
+  },
+  fontCol: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    flexDirection: 'row',
     gap: 6,
-    marginTop: 3,
-    flexWrap: 'wrap',
   },
   fontBtn: {
     width: 24,
