@@ -11,8 +11,8 @@ export async function loadTapSound() {
       staysActiveInBackground: false,
     });
     const { sound } = await Audio.Sound.createAsync(
-      { uri: 'https://cdn.freesound.org/previews/25/25879_37876-lq.mp3' },
-      { shouldPlay: false, volume: 0.12 }
+      require('../assets/sounds/tap-soft.wav'),
+      { shouldPlay: false, volume: 0.07 }
     );
     tapSound = sound;
     isLoaded = true;

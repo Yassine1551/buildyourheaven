@@ -12,6 +12,12 @@ export interface WirdDhikrItem {
   syncTarget?: string;
   hasanatPerTap?: number;
   sadaqatPerTap?: number;
+  extraLifeMinutes?: number;
+  treasuresPerTap?: number;
+  khatmaEvery?: number;
+  qusurEvery?: number;
+  salawatPerTap?: number;
+  levelPointsPerTap?: number;
 }
 
 export const WIRD_CONFIG_VERSION = 2;
@@ -25,8 +31,9 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُنْ لَّهُ كُفُوًا أَحَدٌ',
     target: 10,
     enabled: true,
-    syncTarget: 'multi_qasr_khatma',
-    hideFadl: true,
+    fadl: 'قراءتها مرة تعادل ثلث القرآن، وعشر مرات يبني الله تبارك وتعالى لك قصراً في الجنة.',
+    khatmaEvery: 3,
+    qusurEvery: 10,
   },
   {
     id: 'wird_sadaqat',
@@ -38,11 +45,11 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     hasanatPerTap: 40,
     sadaqatPerTap: 4,
   },
-  { id: 'wird_hawqala', title: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', text: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', target: 100, enabled: true },
-  { id: 'wird_hasbi', title: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', text: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', target: 100, enabled: true },
-  { id: 'wird_salawat', title: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', target: 100, enabled: true },
-  { id: 'wird_istighfar', title: 'أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ', text: 'أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ', target: 100, enabled: true },
-  { id: 'wird_subhan_wadhim', title: 'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', text: 'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', target: 100, enabled: true },
+  { id: 'wird_hawqala', title: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', text: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', target: 100, enabled: true, fadl: 'كنز من كنوز الجنة، وبركة في العمل وطمأنينة للقلب.', treasuresPerTap: 1 },
+  { id: 'wird_hasbi', title: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', text: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ', target: 100, enabled: true, fadl: 'تكفيك الله ما أهمك من أمر الدنيا والآخرة، ويجزلك خيره.' },
+  { id: 'wird_salawat', title: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ', target: 100, enabled: true, fadl: 'من صلى على النبي صلى الله عليه بها عشراً، وحطت عنه عشر خطيئات، ورفعت له عشر درجات.', hasanatPerTap: 10, salawatPerTap: 10, levelPointsPerTap: 10 },
+  { id: 'wird_istighfar', title: 'أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ', text: 'أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ', target: 100, enabled: true, fadl: 'من قالها غفرت له ذنوبه ولو كانت مثل زبد البحر.' },
+  { id: 'wird_subhan_wadhim', title: 'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', text: 'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', target: 100, enabled: true, fadl: 'قطعت حبال الملائكة، ومغفرة لما قبلها إن قلت في اليوم مائة مرة.' },
   {
     id: 'wird_counted_subhan',
     title: 'سُبْحَانَ اللهِ عَدَدَ مَا خَلَقَ...',
@@ -51,6 +58,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'تسبيحٌ بعدد ما خلق الله، يملأ الميزان من الحسنات.',
     keyword: 'سُبْحَانَ اللهِ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_hamd',
@@ -60,6 +69,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'الحمدُ لله يملأ الميزان، فكيف بحمدٍ بعدد الخلائق أجمعين.',
     keyword: 'الْحَمْدُ لِلَّهِ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_tahlil',
@@ -69,6 +80,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'كلمة التوحيد أثقل ما يوضع في الميزان، فكيف إذا كانت بعدد الخلائق.',
     keyword: 'لَا إِلَهَ إِلَّا اللهُ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_takbir',
@@ -78,6 +91,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'تعظيمٌ لله بعدد ما خلق، يحبّه الله ويملأ الأرض والسماء ذكراً.',
     keyword: 'اللهُ أَكْبَرُ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_hawqala',
@@ -87,6 +102,9 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'كنزٌ من كنوز الجنة، يفتح لك أبواب التوفيق والعون من الله.',
     keyword: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
+    treasuresPerTap: 1,
   },
   {
     id: 'wird_counted_hasbi',
@@ -96,6 +114,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'تفويضٌ كاملٌ إلى الله بعدد خلقه، يكفيك الله ما أهمّك.',
     keyword: 'حَسْبِيَ اللهُ وَنِعْمَ الْوَكِيلُ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_istighfar',
@@ -105,6 +125,8 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     enabled: true,
     fadl: 'استغفارٌ بعدد الخلائق، تُمحى به الذنوب وتُستنزل الرحمات.',
     keyword: 'أَسْتَغْفِرُ اللهَ',
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
   {
     id: 'wird_counted_salawat',
@@ -115,5 +137,7 @@ export const DEFAULT_WIRD_ITEMS: WirdDhikrItem[] = [
     fadl: 'من صلّى على النبي ﷺ صلاةً صلّى الله عليه بها عشراً، فكيف بعدد الخلائق.',
     keyword: 'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ',
     smallText: true,
+    hasanatPerTap: 5000,
+    extraLifeMinutes: 720,
   },
 ];

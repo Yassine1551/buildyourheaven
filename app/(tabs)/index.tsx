@@ -495,12 +495,13 @@ export default function DashboardScreen() {
   }, [onboardingDone, scrollRef]);
 
   const sortedDhikr = [...dhikrItems].sort((a, b) => a.order - b.order);
-  const titleFontSizes: Record<string, number> = {
-    nakhla: 14,
-    'salat-nabi': 13,
-    dhikr_qasr: 14,
-    hirz: 12,
-    'sadaqat-dhikr': 14,
+  const titleFontStyles: Record<string, { fontSize: number; lineHeight: number }> = {
+    nakhla: { fontSize: 14, lineHeight: 21 },
+    'salat-nabi': { fontSize: 13, lineHeight: 21 },
+    dhikr_qasr: { fontSize: 14, lineHeight: 21 },
+    hirz: { fontSize: 12, lineHeight: 21 },
+    'sadaqat-dhikr': { fontSize: 14, lineHeight: 21 },
+    jawahir: { fontSize: 19, lineHeight: 26 },
   };
 
   return (
@@ -851,6 +852,8 @@ export default function DashboardScreen() {
                     ? Math.floor(count / item.targetCount) * (item.slavesFreed || 0)
                     : item.id === 'hasbiyallah'
                     ? Math.floor(count / item.targetCount)
+                    : item.id === 'dhikr_qasr'
+                    ? Math.floor(count / item.targetCount)
                     : count;
 
                 return (
@@ -862,7 +865,7 @@ export default function DashboardScreen() {
                       onPress={() => handleDhikrPress(item.id)}
                       style={({ pressed }) => [
                         styles.dhikrCard,
-                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.4 },
+                        { width: dhikrCardWidth, height: dhikrCardWidth * 1.55 },
                         unlocked && count > 0 && styles.dhikrCardActive,
                         pressed && styles.dhikrCardPressed,
                         !unlocked && pressed && { opacity: 0.5 },
@@ -874,7 +877,7 @@ export default function DashboardScreen() {
                             <MaterialIcons name={item.icon as any} size={32} color={item.color} />
                           </View>
                           <View style={styles.dhikrTitleCenter}>
-                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                            <Text style={[styles.dhikrCardTitle, titleFontStyles[item.id] ? titleFontStyles[item.id] : {}]} numberOfLines={2}>
                               {item.title}
                             </Text>
                           </View>
@@ -890,7 +893,7 @@ export default function DashboardScreen() {
                             <MaterialIcons name="lock-outline" size={32} color="rgba(0,0,0,0.25)" />
                           </View>
                           <View style={styles.dhikrTitleCenter}>
-                            <Text style={[styles.dhikrCardTitle, titleFontSizes[item.id] ? { fontSize: titleFontSizes[item.id] } : {}]} numberOfLines={2}>
+                            <Text style={[styles.dhikrCardTitle, titleFontStyles[item.id] ? titleFontStyles[item.id] : {}]} numberOfLines={2}>
                               {item.title}
                             </Text>
                           </View>
@@ -2197,7 +2200,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   dhikrCountSlot: {
-    height: 30,
+    height: 26,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2208,9 +2211,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   dhikrIconCircleLocked: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2244,9 +2247,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   dhikrIconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,

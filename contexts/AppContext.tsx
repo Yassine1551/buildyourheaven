@@ -138,7 +138,7 @@ function computeIsUnlocked(
     case 'thuluth-quran': return (counts['salat-nabi'] || 0) >= 200;
     case 'kanz': return (counts['thuluth-quran'] || 0) >= 100;
     case 'dhikr_qasr': return (counts['kanz'] || 0) >= 200;
-    case 'sadaqat-dhikr': return (counts['dhikr_qasr'] || 0) >= 100;
+    case 'sadaqat-dhikr': return Math.floor((counts['dhikr_qasr'] || 0) / 10) >= 20;
     case 'tahlil': return (counts['sadaqat-dhikr'] || 0) >= 300;
     case 'jawamie': return (counts['tahlil'] || 0) >= 100;
     case 'jawahir': return (counts['jawamie'] || 0) >= 33;
@@ -166,12 +166,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [celebrationQueue, setCelebrationQueue] = useState<string[]>([]);
   const [dailyLog, setDailyLog] = useState<Record<string, number>>({});
   const [dailyGoal, setDailyGoalState] = useState(500);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [useWesternNumerals, setUseWesternNumerals] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [recitation, setRecitationState] = useState<'hafs' | 'warsh'>('hafs');
-  const [darkAuto, setDarkAuto] = useState(true);
+  const [darkAuto, setDarkAuto] = useState(false);
   const [targetYears, setTargetYearsState] = useState(60);
   const [morningCounts, setMorningCounts] = useState<Record<string, number>>({});
   const [sleepCounts, setSleepCounts] = useState<Record<string, number>>({});
@@ -346,6 +346,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     hideFadl: def.hideFadl,
                     smallText: def.smallText,
                     keyword: def.keyword,
+                    hasanatPerTap: def.hasanatPerTap,
+                    sadaqatPerTap: def.sadaqatPerTap,
+                    extraLifeMinutes: def.extraLifeMinutes,
+                    treasuresPerTap: def.treasuresPerTap,
+                    khatmaEvery: def.khatmaEvery,
+                    qusurEvery: def.qusurEvery,
+                    salawatPerTap: def.salawatPerTap,
+                    levelPointsPerTap: def.levelPointsPerTap,
                   }
                 : { ...def };
             });
@@ -992,6 +1000,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (item.sadaqatPerTap) {
       setStats(prev => ({ ...prev, sadaqat: (prev.sadaqat || 0) + (item.sadaqatPerTap || 0) }));
     }
+    if (item.extraLifeMinutes) {
+      setStats(prev => ({ ...prev, extra_life_minutes: (prev.extra_life_minutes || 0) + (item.extraLifeMinutes || 0) }));
+    }
+    if (item.treasuresPerTap) {
+      setStats(prev => ({ ...prev, treasures: (prev.treasures || 0) + (item.treasuresPerTap || 0) }));
+    }
+    if (item.salawatPerTap) {
+      setStats(prev => ({ ...prev, salawat: (prev.salawat || 0) + (item.salawatPerTap || 0) }));
+    }
+    if (item.levelPointsPerTap) {
+      setStats(prev => ({ ...prev, level_points: (prev.level_points || 0) + (item.levelPointsPerTap || 0) }));
+    }
+    if (item.khatmaEvery && current % item.khatmaEvery === 0) {
+      setStats(prev => ({ ...prev, khatma: (prev.khatma || 0) + 1 }));
+    }
+    if (item.qusurEvery && current % item.qusurEvery === 0) {
+      setStats(prev => ({ ...prev, qusur: (prev.qusur || 0) + 1 }));
+    }
     setIstiqama(prev => prev + 1);
     incrementTodayCount();
     const newLevel = Math.floor((istiqama + 1) / 50) + 1;
@@ -1062,7 +1088,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case 'kanz': { const r = Math.max(0, 100 - (dhikrCounts['thuluth-quran'] || 0)); return r > 0 ? `مطلوب 100 ثلث القرآن (متبقي: ${r})` : ''; }
       case 'dhikr_qasr': { const r = Math.max(0, 200 - (dhikrCounts['kanz'] || 0)); return r > 0 ? `مطلوب 200 كنز الجنة (متبقي: ${r})` : ''; }
       case 'milul-mizan': { const r = Math.max(0, 1 - (dhikrCounts['hirz'] || 0)); return r > 0 ? `مطلوب مرة واحدة حرز من الشيطان (متبقي: ${r})` : ''; }
-      case 'sadaqat-dhikr': { const r = Math.max(0, 100 - (dhikrCounts['dhikr_qasr'] || 0)); return r > 0 ? `مطلوب 100 قصر في الجنة (متبقي: ${r})` : ''; }
+      case 'sadaqat-dhikr': { const pal = Math.floor((dhikrCounts['dhikr_qasr'] || 0) / 10); const r = Math.max(0, 20 - pal); return r > 0 ? `مطلوب 20 قصر في الجنة (متبقي: ${r})` : ''; }
       case 'tahlil': { const r = Math.max(0, 300 - (dhikrCounts['sadaqat-dhikr'] || 0)); return r > 0 ? `مطلوب 300 صدقات الأذكار (متبقي: ${r})` : ''; }
       case 'jawamie': { const r = Math.max(0, 100 - (dhikrCounts['tahlil'] || 0)); return r > 0 ? `مطلوب 100 عتق الرقاب (متبقي: ${r})` : ''; }
       case 'jawahir': { const r = Math.max(0, 33 - (dhikrCounts['jawamie'] || 0)); return r > 0 ? `مطلوب 33 جوامع الكلم (متبقي: ${r})` : ''; }
