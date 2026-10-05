@@ -284,9 +284,17 @@ export default function WirdScreen() {
 
                         <View style={styles.titleCenter}>
                           <Text style={styles.activeTitle} numberOfLines={2}>{item.title}</Text>
-                          <Text style={styles.targetIndicator}>
-                            العدد المنشود: {formatArabicNumber(item.target, useWesternNumerals)}
-                          </Text>
+                          <View style={styles.targetRow}>
+                            <Text style={styles.targetIndicator}>
+                              العدد المنشود: {formatArabicNumber(item.target, useWesternNumerals)}
+                            </Text>
+                            <Pressable onPress={() => changeWirdFont(item.id, -2, item.smallText ? 20 : 26)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
+                              <Text style={styles.fontBtnText}>A−</Text>
+                            </Pressable>
+                            <Pressable onPress={() => changeWirdFont(item.id, 2, item.smallText ? 20 : 26)} style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]} hitSlop={4}>
+                              <Text style={styles.fontBtnText}>A+</Text>
+                            </Pressable>
+                          </View>
                         </View>
 
                         <Pressable
@@ -355,22 +363,6 @@ export default function WirdScreen() {
                             ]}>{item.text}</Text>
                           )}
                         </ScrollView>
-                        <View style={styles.fontControls} pointerEvents="box-none">
-                          <Pressable
-                            onPress={() => changeWirdFont(item.id, -2, item.smallText ? 20 : 26)}
-                            style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]}
-                            hitSlop={6}
-                          >
-                            <Text style={styles.fontBtnText}>A−</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => changeWirdFont(item.id, 2, item.smallText ? 20 : 26)}
-                            style={({ pressed }) => [styles.fontBtn, pressed && { opacity: 0.5 }]}
-                            hitSlop={6}
-                          >
-                            <Text style={styles.fontBtnText}>A+</Text>
-                          </Pressable>
-                        </View>
                       </View>
                     </View>
 
@@ -630,18 +622,18 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     lineHeight: 32,
   },
-  fontControls: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
+  targetRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    zIndex: 5,
+    marginTop: 3,
+    flexWrap: 'wrap',
   },
   fontBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -649,7 +641,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fontBtnText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '800',
     color: '#E4E4E7',
     writingDirection: 'ltr',
